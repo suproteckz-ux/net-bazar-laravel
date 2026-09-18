@@ -285,7 +285,7 @@ class CatalogImport extends Command
      */
     private function applyFeed(array $offers, string $sha256): array
     {
-        $now      = now()->toIso8601String();
+        $now      = now()->toDateTimeString();
         $updated  = 0;
         $inserted = 0;
 
@@ -375,14 +375,14 @@ class CatalogImport extends Command
     {
         try {
             DB::table('catalog_sync_runs')->insert([
-                'time'        => now()->toIso8601String(),
+                'time'        => now()->toDateTimeString(),
                 'sha256'      => $sha256,
                 'offer_count' => $offerCount,
                 'report_json' => json_encode([
                     'result' => $result,
                     'detail' => $detail,
                     'mode'   => 'import',
-                    'time'   => now()->toIso8601String(),
+                    'time'   => now()->toDateTimeString(),
                 ], JSON_UNESCAPED_UNICODE),
             ]);
         } catch (\Throwable) {
