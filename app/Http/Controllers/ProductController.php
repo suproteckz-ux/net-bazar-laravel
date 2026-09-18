@@ -17,11 +17,16 @@ class ProductController extends Controller
             return redirect()->route('product.show', ['sku' => $alias->new_sku], 301);
         }
 
-        // 2. Load product with enrichment and stock in one query
+        // 2. Load product with enrichment and stock in one query.
+        // kaspi_confirmed_url comes from kaspi_lookup (status=resolved) and gets ?m=PARTNER_ID
+        // appended in the view — matches the original Python app.py L161 behaviour.
         $product = DB::table('products as p')
             ->leftJoin('kaspi_content as kc', 'kc.sku', '=', 'p.sku')
             ->leftJoin('stock_pp3 as s', 's.sku', '=', 'p.sku')
             ->leftJoin('source_categories as sc', 'sc.id', '=', 'p.source_category_id')
+            ->leftJoin('kaspi_lookup as kl', function ($join) {
+                $join->on('kl.sku', '=', 'p.sku')->where('kl.status', '=', 'resolved');
+            })
             ->where('p.sku', $sku)
             ->select(
                 'p.sku', 'p.name', 'p.brand', 'p.price_kzt', 'p.present',
@@ -32,7 +37,7 @@ class ProductController extends Controller
                 'kc.description as kaspi_description',
                 'kc.attributes_json',
                 'kc.status as kaspi_status',
-                'kc.url as kaspi_url',
+                'kl.url as kaspi_confirmed_url',
                 's.state as stock_state',
                 's.quantity as stock_quantity',
                 's.preorder_days'
