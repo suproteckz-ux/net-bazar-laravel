@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('catalog_sync_runs', function (Blueprint $table) {
-            $table->unsignedBigInteger('id')->autoIncrement()->primary();
+            $table->id();
             $table->string('time', 50);
             $table->string('sha256', 64);
             $table->integer('offer_count');

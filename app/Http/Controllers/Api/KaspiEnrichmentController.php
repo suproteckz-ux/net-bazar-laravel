@@ -88,6 +88,10 @@ class KaspiEnrichmentController extends Controller
             return response()->json(['error' => 'Unprocessable Entity'], 422);
         }
 
+        // ConvertEmptyStringsToNull global middleware converts '' to null for JSON requests;
+        // normalize 'detail' back to empty string so is_string() check below passes.
+        $p['detail'] = $p['detail'] ?? '';
+
         $sku    = $p['sku'];
         $status = $p['status'];
         $url    = $p['url'];
@@ -302,7 +306,7 @@ class KaspiEnrichmentController extends Controller
         $overrides = DB::table('kaspi_category_overrides')->get()->toArray();
 
         // Disable FK checks: self-referential kaspi_categories and CASCADE targets
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        $this->setForeignKeyChecks(false);
         try {
             DB::table('kaspi_category_overrides')->delete();
             DB::table('product_kaspi_categories')->delete();
@@ -347,7 +351,7 @@ class KaspiEnrichmentController extends Controller
                 }
             }
         } finally {
-            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+            $this->setForeignKeyChecks(true);
         }
 
         // Restore overrides for categories whose IDs survived the rebuild
@@ -423,6 +427,15 @@ class KaspiEnrichmentController extends Controller
             'template'     => 'button',
             'style'        => 'desktop',
         ]);
+    }
+
+    private function setForeignKeyChecks(bool $on): void
+    {
+        match (DB::getDriverName()) {
+            'mysql', 'mariadb' => DB::statement($on ? 'SET FOREIGN_KEY_CHECKS=1' : 'SET FOREIGN_KEY_CHECKS=0'),
+            'sqlite'           => DB::statement($on ? 'PRAGMA foreign_keys=ON' : 'PRAGMA foreign_keys=OFF'),
+            default            => null,
+        };
     }
 
     // plain() mirrors enrichment.plain(): strip HTML tags, normalize whitespace

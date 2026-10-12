@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('batch_attempts', function (Blueprint $table) {
-            $table->unsignedBigInteger('id')->autoIncrement()->primary();
+            $table->id();
             $table->string('stage', 50);
             $table->string('sku');
             $table->text('url')->nullable();

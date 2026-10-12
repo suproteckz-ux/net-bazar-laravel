@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('import_runs', function (Blueprint $table) {
-            $table->unsignedBigInteger('id')->autoIncrement()->primary();
+            $table->id();
             $table->timestamp('imported_at')->useCurrent();
             $table->string('sha256', 64);
             $table->integer('product_count');

@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('kaspi_batch_archive', function (Blueprint $table) {
-            $table->unsignedBigInteger('id')->autoIncrement()->primary();
+            $table->id();
             $table->string('archived_at', 50);
             $table->text('table_name');
             $table->longText('payload_json');

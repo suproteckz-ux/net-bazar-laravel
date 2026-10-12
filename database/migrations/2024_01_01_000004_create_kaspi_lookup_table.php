@@ -24,14 +24,17 @@ return new class extends Migration
             $table->foreign('sku')->references('sku')->on('products');
         });
 
-        // Mirrors the SQLite CHECK: (resolved AND url NOT NULL) OR (not resolved AND url IS NULL)
-        DB::statement(
-            "ALTER TABLE kaspi_lookup ADD CONSTRAINT kaspi_lookup_status_url_check
-             CHECK (
-                 (status = 'resolved' AND url IS NOT NULL)
-                 OR (status <> 'resolved' AND url IS NULL)
-             )"
-        );
+        // MySQL: enforce (resolved AND url NOT NULL) OR (not resolved AND url IS NULL)
+        // SQLite: CHECK in ALTER TABLE is not supported; constraint is skipped (tested via app logic)
+        if (DB::getDriverName() === 'mysql' || DB::getDriverName() === 'mariadb') {
+            DB::statement(
+                "ALTER TABLE kaspi_lookup ADD CONSTRAINT kaspi_lookup_status_url_check
+                 CHECK (
+                     (status = 'resolved' AND url IS NOT NULL)
+                     OR (status <> 'resolved' AND url IS NULL)
+                 )"
+            );
+        }
     }
 
     public function down(): void
