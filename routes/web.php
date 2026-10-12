@@ -6,6 +6,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\InfoController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -28,6 +29,11 @@ Route::delete('/cart/items/{sku}', [CartController::class, 'destroy'])
     ->name('cart.items.destroy')
     ->where('sku', '[^/]+');
 Route::delete('/cart', [CartController::class, 'clear'])->name('cart.clear');
+
+// Info pages
+Route::get('/about',            [InfoController::class, 'about'])->name('info.about');
+Route::get('/contacts',         [InfoController::class, 'contacts'])->name('info.contacts');
+Route::get('/delivery-payment', [InfoController::class, 'delivery'])->name('info.delivery');
 
 // Checkout
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');

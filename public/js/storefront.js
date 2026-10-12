@@ -59,4 +59,20 @@
     document.body.classList.add('nb-has-buybar');
   }
 
+  /* ── WhatsApp button in product cards ────────────────────────────── */
+  document.querySelectorAll('.nb-card__wa-btn').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.open(this.dataset.wa, '_blank', 'noopener,noreferrer');
+    });
+    btn.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        window.open(this.dataset.wa, '_blank', 'noopener,noreferrer');
+      }
+    });
+  });
+
 })();

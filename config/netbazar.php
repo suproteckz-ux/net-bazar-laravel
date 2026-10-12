@@ -2,6 +2,30 @@
 
 return [
 
+    // ── Contact data (single source of truth for header, footer, info pages) ─
+    'contact' => [
+        'phone'          => '+7 (778) 492-11-13',
+        'phone_href'     => 'tel:+77784921113',
+        'whatsapp'       => '77784921113',
+        'whatsapp_url'   => 'https://wa.me/77784921113',
+        'address'        => 'г. Алматы, ул. Муратбаева, 138',
+        'address_full'   => 'Казахстан, г. Алматы, ул. Муратбаева, 138',
+        'instagram'      => '@netbazar_kresla',
+        'instagram_url'  => 'https://www.instagram.com/netbazar_kresla/',
+        'company'        => 'ТОО «NetBazar»',
+        'bin'            => '210240001553',
+        'site_url'       => 'https://netbazar.kz',
+        'hours' => [
+            ['day' => 'Понедельник', 'time' => '09:00–18:00', 'off' => false],
+            ['day' => 'Вторник',     'time' => '09:00–18:00', 'off' => false],
+            ['day' => 'Среда',       'time' => '09:00–18:00', 'off' => false],
+            ['day' => 'Четверг',     'time' => '09:00–18:00', 'off' => false],
+            ['day' => 'Пятница',     'time' => '09:00–18:00', 'off' => false],
+            ['day' => 'Суббота',     'time' => '11:00–16:00', 'off' => false],
+            ['day' => 'Воскресенье', 'time' => 'Выходной',    'off' => true],
+        ],
+    ],
+
     // ── Kaspi integration ────────────────────────────────────────────────────
     // Original Python: kaspi.PARTNER_ID = 'Avtoximiya'
     // Used to construct merchant-specific URL: {kaspi_lookup.url}?m=Avtoximiya

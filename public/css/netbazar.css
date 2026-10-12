@@ -624,3 +624,202 @@ textarea.nb-input { resize: vertical; min-height: 80px; }
   .nb-checkout { grid-template-columns: 1fr; }
   .nb-checkout__aside { position: static; }
 }
+
+/* ═══════════════════════ WHATSAPP BUTTON ══════════════════════════════════════ */
+.nb-btn--whatsapp {
+  background: #25D366; color: #fff;
+  box-shadow: 0 8px 24px rgba(37,211,102,.22);
+}
+.nb-btn--whatsapp:hover { background: #1ebe5d; color: #fff; }
+.nb-btn--whatsapp:active { background: #17a852; }
+
+/* Desktop header WhatsApp button */
+.nb-wa-header {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 38px; padding: 0 16px; border-radius: var(--nb-r-pill);
+  background: rgba(37,211,102,.12); border: 1px solid rgba(37,211,102,.30);
+  color: #25D366; font-size: 13px; font-weight: 600; white-space: nowrap;
+  transition: background .15s, border-color .15s, color .15s;
+  text-decoration: none;
+}
+.nb-wa-header:hover { background: #25D366; border-color: #25D366; color: #fff; }
+.nb-wa-header svg { flex: none; }
+
+/* Mobile header WhatsApp square */
+.nb-sq--wa { color: #25D366; }
+
+/* WhatsApp button in product card tile */
+.nb-card__wa-btn {
+  width: 32px; height: 32px; flex: none; border-radius: var(--nb-r-pill);
+  background: rgba(37,211,102,.08); border: 1px solid rgba(37,211,102,.24);
+  display: grid; place-items: center; color: #25D366; cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.nb-card__wa-btn:hover, .nb-card__wa-btn:focus-visible {
+  background: #25D366; border-color: #25D366; color: #fff;
+  outline: none;
+}
+.nb-card__wa-btn:focus-visible { box-shadow: 0 0 0 3px rgba(37,211,102,.3); }
+
+/* ═══════════════════════ FOOTER ADDITIONS ══════════════════════════════════════ */
+.nb-footer__address {
+  font-style: normal; display: flex; flex-direction: column; gap: 9px; margin-top: 16px;
+}
+.nb-footer__address a {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--nb-dim); text-decoration: none;
+}
+.nb-footer__address a:hover { color: var(--nb-accent); }
+.nb-footer__address svg { flex: none; color: var(--nb-accent); }
+
+.nb-footer__bottom {
+  border-top: 1px solid var(--nb-line-soft); margin-top: 40px; padding-top: 22px;
+  display: flex; flex-wrap: wrap; align-items: flex-start;
+  justify-content: space-between; gap: 10px;
+  font-size: 12px; color: var(--nb-faint); line-height: 1.5;
+}
+.nb-footer__disclaimer { max-width: 420px; text-align: right; }
+
+/* Drawer contacts block */
+.nb-drawer__contacts {
+  display: flex; flex-direction: column; gap: 2px;
+  margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--nb-line-soft);
+}
+.nb-drawer__contact-link {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border-radius: var(--nb-r-sm); font-size: 14px; font-weight: 500; color: var(--nb-text-3);
+}
+.nb-drawer__contact-link:hover { background: var(--nb-hover-row); color: var(--nb-accent); }
+.nb-drawer__contact-link svg { flex: none; color: var(--nb-accent); }
+
+/* ═══════════════════════ INFO PAGES ════════════════════════════════════════════ */
+.nb-info-page { max-width: 900px; }
+
+.nb-info-cards {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px; margin-top: 24px;
+}
+.nb-info-card {
+  background: var(--nb-surface); border: 1px solid var(--nb-line-card);
+  border-radius: var(--nb-r-md); padding: 20px 22px;
+}
+.nb-info-card__icon { color: var(--nb-accent); margin-bottom: 12px; }
+.nb-info-card__label {
+  font-size: 11px; font-weight: 700; letter-spacing: .16em;
+  color: var(--nb-dim); text-transform: uppercase; margin-bottom: 5px;
+}
+.nb-info-card__title { font-family: var(--nb-font-display); font-size: 15px; font-weight: 700; color: var(--nb-text); margin-bottom: 8px; }
+.nb-info-card__value { font-size: 14.5px; font-weight: 600; color: var(--nb-text); }
+.nb-info-card__value a { color: var(--nb-text); text-decoration: none; }
+.nb-info-card__value a:hover { color: var(--nb-accent); }
+.nb-info-card__body { font-size: 13.5px; line-height: 1.55; color: var(--nb-muted); }
+
+.nb-section { margin-top: 52px; }
+
+.nb-hours {
+  margin-top: 18px; border: 1px solid var(--nb-line-soft);
+  border-radius: var(--nb-r-md); overflow: hidden;
+}
+.nb-hours__row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px; font-size: 14px;
+  border-bottom: 1px solid var(--nb-line-soft);
+}
+.nb-hours__row:last-child { border-bottom: 0; }
+.nb-hours__row:nth-child(odd) { background: var(--nb-surface); }
+.nb-hours__row:nth-child(even) { background: var(--nb-well); }
+.nb-hours__day { color: var(--nb-text-3); }
+.nb-hours__time { font-weight: 600; color: var(--nb-text); }
+.nb-hours__time--off { color: var(--nb-dim); font-weight: 400; }
+
+.nb-map-placeholder {
+  background: var(--nb-surface); border: 1px solid var(--nb-line-card);
+  border-radius: var(--nb-r-md); padding: 36px 28px; text-align: center;
+  margin-top: 20px;
+}
+.nb-map-placeholder__icon { color: var(--nb-accent); margin: 0 auto 16px; width: 40px; }
+.nb-map-placeholder__addr { font-size: 15px; font-weight: 600; color: var(--nb-text); margin-bottom: 8px; }
+.nb-map-placeholder__note { font-size: 13px; color: var(--nb-dim); margin-bottom: 22px; }
+
+.nb-contact-btns { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+
+.nb-delivery-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px;
+}
+.nb-delivery-row--3 { grid-template-columns: repeat(3, 1fr); }
+.nb-delivery-card {
+  background: var(--nb-surface); border: 1px solid var(--nb-line-card);
+  border-radius: var(--nb-r-md); padding: 22px 22px 20px;
+}
+.nb-delivery-card__icon { color: var(--nb-accent); margin-bottom: 12px; }
+.nb-delivery-card__title {
+  font-family: var(--nb-font-display); font-size: 16px; font-weight: 700;
+  color: var(--nb-text); margin-bottom: 10px;
+}
+.nb-delivery-card__body { font-size: 13.5px; line-height: 1.6; color: var(--nb-muted); }
+.nb-delivery-card__price {
+  font-family: var(--nb-font-display); font-size: 26px; font-weight: 800;
+  color: var(--nb-text); margin-top: 14px; line-height: 1;
+}
+.nb-delivery-card__price span { font-size: 12px; color: var(--nb-dim); font-family: var(--nb-font-text); font-weight: 400; display: block; margin-top: 3px; }
+
+.nb-requisites {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px; margin-top: 18px;
+}
+.nb-req-item {
+  background: var(--nb-panel); border: 1px solid var(--nb-line-soft);
+  border-radius: 10px; padding: 14px 18px;
+}
+.nb-req-item dt {
+  font-size: 11px; font-weight: 700; letter-spacing: .14em;
+  color: var(--nb-dim); text-transform: uppercase; margin-bottom: 4px;
+}
+.nb-req-item dd { margin: 0; font-size: 14px; font-weight: 600; color: var(--nb-text); }
+.nb-req-item dd a { color: inherit; text-decoration: none; }
+.nb-req-item dd a:hover { color: var(--nb-accent); }
+
+/* About page list styles */
+.nb-why-list {
+  list-style: none; margin: 16px 0 0; padding: 0;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.nb-why-list li {
+  display: flex; align-items: flex-start; gap: 12px;
+  font-size: 15px; color: var(--nb-text-2);
+}
+.nb-why-list li::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--nb-accent); flex: none; margin-top: 8px;
+}
+
+.nb-steps {
+  list-style: none; margin: 18px 0 0; padding: 0;
+  display: flex; flex-direction: column; gap: 0;
+  counter-reset: steps;
+}
+.nb-steps li {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 0; border-bottom: 1px solid var(--nb-line-soft);
+  font-size: 15px; color: var(--nb-text-2);
+}
+.nb-steps li:last-child { border-bottom: 0; }
+.nb-steps__num {
+  width: 28px; height: 28px; flex: none; border-radius: 50%;
+  background: var(--nb-accent); color: var(--nb-on-accent);
+  font-family: var(--nb-font-display); font-size: 13px; font-weight: 800;
+  display: grid; place-items: center; margin-top: 1px;
+}
+
+/* ─── Info pages responsive ─── */
+@media (max-width: 767px) {
+  .nb-delivery-row { grid-template-columns: 1fr; }
+  .nb-delivery-row--3 { grid-template-columns: 1fr; }
+  .nb-contact-btns .nb-btn { width: 100%; justify-content: center; }
+  .nb-footer__disclaimer { text-align: left; }
+  .nb-footer__bottom { flex-direction: column; gap: 6px; }
+  .nb-info-cards { grid-template-columns: 1fr; }
+  .nb-requisites { grid-template-columns: 1fr; }
+  .nb-wa-header span { display: none; }
+  .nb-wa-header { padding: 0 12px; }
+}
