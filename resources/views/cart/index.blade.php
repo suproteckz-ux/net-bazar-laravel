@@ -34,7 +34,8 @@
             @foreach($products as $sku => $row)
                 @php $grandTotal += $row->line_total; @endphp
                 <div class="nb-cart__row">
-                    <a href="{{ route('product.show', ['sku' => $sku]) }}" class="nb-cart__thumb" aria-label="{{ $row->name }}">
+                    @php $productParam = $row->url_slug ?? $sku; @endphp
+                    <a href="{{ route('product.show', ['sku' => $productParam]) }}" class="nb-cart__thumb" aria-label="{{ $row->name }}">
                         @if($row->photo)
                             <img src="{{ $row->photo }}" alt="{{ $row->name }}" loading="lazy">
                         @else
@@ -45,7 +46,7 @@
                         @if($row->brand)
                             <span class="nb-overline">{{ mb_strtoupper($row->brand) }}</span>
                         @endif
-                        <a href="{{ route('product.show', ['sku' => $sku]) }}" class="nb-cart__name nb-body">{{ $row->name }}</a>
+                        <a href="{{ route('product.show', ['sku' => $productParam]) }}" class="nb-cart__name nb-body">{{ $row->name }}</a>
                         <span class="nb-cart__sku" style="font-size:12px; color:var(--nb-dim);">Арт.: {{ $sku }}</span>
                     </div>
                     <div class="nb-cart__qty">

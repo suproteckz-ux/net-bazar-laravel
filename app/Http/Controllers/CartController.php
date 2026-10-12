@@ -79,7 +79,7 @@ class CartController extends Controller
         $rows = DB::table('products as p')
             ->leftJoin('kaspi_content as kc', 'kc.sku', '=', 'p.sku')
             ->whereIn('p.sku', array_keys($cart))
-            ->select('p.sku', 'p.name', 'p.brand', 'p.price_kzt',
+            ->select('p.sku', 'p.url_slug', 'p.name', 'p.brand', 'p.price_kzt',
                      'p.source_photos_json',
                      'kc.photos_json as kaspi_photos_json',
                      'kc.manual_photos_json')

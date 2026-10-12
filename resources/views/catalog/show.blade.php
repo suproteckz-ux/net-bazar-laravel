@@ -44,11 +44,12 @@
                 <div class="nb-grid" style="margin-top: 26px;">
                     @foreach($products as $product)
                         @php
-                            $photo = \App\Http\Controllers\CatalogController::firstPhoto($product);
-                            $waText = 'Здравствуйте! Меня интересует товар: ' . $product->name . '. Ссылка: ' . config('netbazar.contact.site_url') . '/product/' . rawurlencode($product->sku);
-                            $waUrl  = 'https://wa.me/' . config('netbazar.contact.whatsapp') . '?text=' . rawurlencode($waText);
+                            $photo       = \App\Http\Controllers\CatalogController::firstPhoto($product);
+                            $productPath = '/product/' . ($product->url_slug ?? rawurlencode($product->sku));
+                            $waText      = 'Здравствуйте! Меня интересует товар: ' . $product->name . '. Ссылка: ' . config('netbazar.contact.site_url') . $productPath;
+                            $waUrl       = 'https://wa.me/' . config('netbazar.contact.whatsapp') . '?text=' . rawurlencode($waText);
                         @endphp
-                        <a href="{{ route('product.show', ['sku' => $product->sku]) }}"
+                        <a href="{{ route('product.show', ['sku' => $product->url_slug ?? $product->sku]) }}"
                            class="nb-card" aria-label="{{ $product->name }}">
                             <div class="nb-card__well">
                                 @if($photo)

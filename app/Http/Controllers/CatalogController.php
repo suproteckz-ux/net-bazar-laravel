@@ -37,7 +37,7 @@ class CatalogController extends Controller
             ->leftJoin('kaspi_content as kc', 'kc.sku', '=', 'p.sku')
             ->where('p.present', 1)
             ->select(
-                'p.sku', 'p.name', 'p.brand', 'p.price_kzt',
+                'p.sku', 'p.url_slug', 'p.name', 'p.brand', 'p.price_kzt',
                 'p.source_photos_json',
                 'kc.photos_json as kaspi_photos_json',
                 'kc.manual_photos_json'
@@ -104,7 +104,7 @@ class CatalogController extends Controller
                 }
             })
             ->select(
-                'p.sku', 'p.name', 'p.brand', 'p.price_kzt',
+                'p.sku', 'p.url_slug', 'p.name', 'p.brand', 'p.price_kzt',
                 'p.source_photos_json',
                 'kc.photos_json as kaspi_photos_json',
                 'kc.manual_photos_json'

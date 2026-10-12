@@ -7,18 +7,59 @@ use Illuminate\Support\Facades\Schema;
 
 class ProductController extends Controller
 {
-    public function show(string $sku)
+    /**
+     * Three-step lookup — no redirect chains:
+     *   1. url_slug match   → 200 (canonical SEO URL)
+     *   2. raw sku match    → 301 to /product/{url_slug}  (old bookmark / import link)
+     *   3. alias match      → 301 directly to target's url_slug (never via raw sku)
+     *   4. 404
+     */
+    public function show(string $param)
     {
-        // 1. Check alias table — redirect old SKUs to new canonical SKU
-        $alias = DB::table('catalog_sku_aliases')
-            ->where('old_sku', $sku)
-            ->first();
-
-        if ($alias) {
-            return redirect()->route('product.show', ['sku' => $alias->new_sku], 301);
+        // Step 1 — url_slug is the canonical URL, serve it directly.
+        $slugOwner = DB::table('products')
+            ->where('url_slug', $param)
+            ->value('sku');
+        if ($slugOwner !== null) {
+            return $this->renderProduct($slugOwner);
         }
 
-        // 2. Load product with enrichment and stock in one query.
+        // Step 2 — raw SKU: redirect to the product's own url_slug (301, no chain).
+        $byRawSku = DB::table('products')
+            ->where('sku', $param)
+            ->select(['sku', 'url_slug'])
+            ->first();
+        if ($byRawSku) {
+            if ($byRawSku->url_slug) {
+                return redirect()->route('product.show', ['sku' => $byRawSku->url_slug], 301);
+            }
+            // Fallback: url_slug not yet generated (should not occur after migration).
+            return $this->renderProduct($byRawSku->sku);
+        }
+
+        // Step 3 — alias: resolve target in one hop, redirect to its url_slug.
+        $newSku = DB::table('catalog_sku_aliases')
+            ->where('old_sku', $param)
+            ->value('new_sku');
+        if ($newSku !== null) {
+            $target = DB::table('products')
+                ->where('sku', $newSku)
+                ->select(['sku', 'url_slug'])
+                ->first();
+            if ($target) {
+                $dest = $target->url_slug ?? $target->sku;
+                return redirect()->route('product.show', ['sku' => $dest], 301);
+            }
+        }
+
+        abort(404, 'Товар не найден.');
+    }
+
+    // ── Internal renderer ─────────────────────────────────────────────────────
+
+    private function renderProduct(string $sku)
+    {
+        // Load product with enrichment and stock in one query.
         // kaspi_confirmed_url comes from kaspi_lookup (status=resolved) and gets ?m=PARTNER_ID
         // appended in the view — matches the original Python app.py L161 behaviour.
         $product = DB::table('products as p')
@@ -30,7 +71,7 @@ class ProductController extends Controller
             })
             ->where('p.sku', $sku)
             ->select(
-                'p.sku', 'p.name', 'p.brand', 'p.price_kzt', 'p.present',
+                'p.sku', 'p.url_slug', 'p.name', 'p.brand', 'p.price_kzt', 'p.present',
                 'p.source_photos_json', 'p.source_category_id',
                 'sc.name as category_name', 'sc.path as category_path',
                 'kc.photos_json as kaspi_photos_json',

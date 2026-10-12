@@ -88,7 +88,8 @@
             </p>
 
             @php
-                $pdpWaText = 'Здравствуйте! Меня интересует товар: ' . $product->name . '. Ссылка: ' . config('netbazar.contact.site_url') . '/product/' . rawurlencode($product->sku);
+                $pdpSlug   = $product->url_slug ?? rawurlencode($product->sku);
+                $pdpWaText = 'Здравствуйте! Меня интересует товар: ' . $product->name . '. Ссылка: ' . config('netbazar.contact.site_url') . '/product/' . $pdpSlug;
                 $pdpWaUrl  = 'https://wa.me/' . config('netbazar.contact.whatsapp') . '?text=' . rawurlencode($pdpWaText);
             @endphp
             <div class="nb-pdp__actions">
