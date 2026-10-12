@@ -3,15 +3,39 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class CategoryTreeService
 {
     /**
      * Load all active categories (leaf nodes with present+ready products, plus all ancestors).
      * Mirrors Python enrichment.public_categories() using the same recursive CTE logic.
+     *
+     * Applies display_name / display_order overrides when kaspi_category_overrides exists.
+     * Falls back to the base query until the migration runs — safe for zero-downtime deploy.
      */
     public function getPublicCategories(): array
     {
+        if (!Schema::hasTable('kaspi_category_overrides')) {
+            return DB::select("
+                WITH RECURSIVE used(id) AS (
+                    SELECT a.category_id
+                    FROM product_kaspi_categories a
+                    JOIN products p ON p.sku = a.sku AND p.present = 1
+                    JOIN kaspi_content e ON e.sku = a.sku AND e.status = 'ready'
+                    UNION
+                    SELECT c.parent_id
+                    FROM kaspi_categories c
+                    JOIN used u ON c.id = u.id
+                    WHERE c.parent_id IS NOT NULL
+                )
+                SELECT kc.id, kc.parent_id, kc.name, kc.path
+                FROM kaspi_categories kc
+                WHERE kc.id IN (SELECT id FROM used)
+                ORDER BY kc.name
+            ");
+        }
+
         return DB::select("
             WITH RECURSIVE used(id) AS (
                 SELECT a.category_id
