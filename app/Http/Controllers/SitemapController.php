@@ -139,7 +139,7 @@ class SitemapController extends Controller
 
     private function base(): string
     {
-        return rtrim(config('netbazar.contact.site_url', 'https://netbazar.kz'), '/');
+        return rtrim(config('netbazar.contact.site_url'), '/');
     }
 
     /**

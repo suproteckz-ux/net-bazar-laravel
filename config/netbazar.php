@@ -14,7 +14,7 @@ return [
         'instagram_url'  => 'https://www.instagram.com/netbazar_kresla/',
         'company'        => 'ТОО «NetBazar»',
         'bin'            => '210240001553',
-        'site_url'       => 'https://netbazar.kz',
+        'site_url'       => env('NETBAZAR_SITE_URL', env('APP_URL', 'https://netbazar.kz')),
         'hours' => [
             ['day' => 'Понедельник', 'time' => '09:00–18:00', 'off' => false],
             ['day' => 'Вторник',     'time' => '09:00–18:00', 'off' => false],

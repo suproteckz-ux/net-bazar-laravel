@@ -151,7 +151,7 @@
                     </div>
                     <div class="nb-info-card__label">Сайт</div>
                     <div class="nb-info-card__value">
-                        <a href="{{ $contact['site_url'] }}">netbazar.kz</a>
+                        <a href="{{ $contact['site_url'] }}">{{ parse_url($contact['site_url'], PHP_URL_HOST) }}</a>
                     </div>
                     <p class="nb-info-card__body">Весь каталог и актуальные цены</p>
                 </div>

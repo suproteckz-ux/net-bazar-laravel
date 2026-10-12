@@ -375,4 +375,55 @@ class SitemapTest extends TestCase
             $body
         );
     }
+
+    // ─── net-bazar.kz domain ─────────────────────────────────────────────────
+
+    public function test_canonical_tag_uses_net_bazar_kz_when_configured(): void
+    {
+        config(['netbazar.contact.site_url' => 'https://net-bazar.kz']);
+
+        $body = $this->get('/catalog')->assertOk()->getContent();
+
+        $this->assertStringContainsString(
+            'rel="canonical" href="https://net-bazar.kz/catalog"',
+            $body
+        );
+        $this->assertStringNotContainsString('canonical" href="https://netbazar.kz', $body);
+    }
+
+    public function test_sitemap_categories_uses_net_bazar_kz_when_configured(): void
+    {
+        config(['netbazar.contact.site_url' => 'https://net-bazar.kz']);
+        Cache::flush();
+
+        $body = $this->get('/sitemap-categories.xml')->assertOk()->getContent();
+
+        // All <loc> entries must use net-bazar.kz
+        preg_match_all('|<loc>(.*?)</loc>|', $body, $m);
+        $this->assertNotEmpty($m[1], 'Sitemap must contain at least one <loc>');
+        foreach ($m[1] as $loc) {
+            $this->assertStringStartsWith('https://net-bazar.kz/catalog/', $loc, "Non-net-bazar.kz loc: {$loc}");
+        }
+        $this->assertStringNotContainsString('netbazar.kz', $body);
+    }
+
+    public function test_robots_txt_uses_net_bazar_kz_sitemap_url(): void
+    {
+        config(['netbazar.contact.site_url' => 'https://net-bazar.kz']);
+        $body = $this->get('/robots.txt')->assertOk()->getContent();
+
+        $this->assertStringContainsString('Sitemap: https://net-bazar.kz/sitemap.xml', $body);
+        $this->assertStringNotContainsString('netbazar.kz', $body);
+    }
+
+    public function test_contacts_page_shows_configured_domain(): void
+    {
+        config(['netbazar.contact.site_url' => 'https://net-bazar.kz']);
+
+        $body = $this->get('/contacts')->assertOk()->getContent();
+
+        // Link href and visible text must both use net-bazar.kz
+        $this->assertStringContainsString('href="https://net-bazar.kz"', $body);
+        $this->assertStringContainsString('>net-bazar.kz<', $body);
+    }
 }
