@@ -1,0 +1,7 @@
+satu_id,path,slug,in_excel,group_name,laravel_candidate,confidence,note
+9133790,/g9133790-stiralnye-mashiny,stiralnye-mashiny,True,Стиральные машины,Kaspi: Стиральные машины,high,stiralnye-mashiny
+8531101,/g8531101-ofisnye-kresla-almaty,ofisnye-kresla-almaty,True,Офисные кресла в Алматы,Kaspi: Офисные кресла,high,matches footer category
+8819311,/g8819311-avtohimiya-avtokosmetika,avtohimiya-avtokosmetika,True,Автохимия,Kaspi: Автохимия/Автотовары,medium,slash candidate
+9268570,/g9268570-dlya-posetitelej,dlya-posetitelej,True,Для посетителей,Kaspi: Офисные кресла (посетители),medium,parenthetical subtype
+8455164,/g8455164-krupnaya-bytovaya-tehnika,krupnaya-bytovaya-tehnika,True,Крупная бытовая техника,NEEDS_MANUAL_CHECK,low,not in known map
+9999999,/g9999999-no-match-group,no-match-group,True,Неизвестная группа,NO_MATCH,low,explicitly no match

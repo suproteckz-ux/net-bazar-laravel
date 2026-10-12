@@ -1,0 +1,6 @@
+satu_id,path,slug,sku,name,mfr,grp_num,grp_name,status,db_status,target_url,note
+11111111,/p11111111-exact-match-produkt.html,exact-match-produkt,EXACT-SKU,Exact Match Product,Brand,8455156,Техника,MATCHED,,,exact sku in products
+22222222,/p22222222-alias-match-produkt.html,alias-match-produkt,OLD-SKU,Alias Match Product,Brand,8455156,Техника,MATCHED,,,sku moved via alias
+33333333,/p33333333-not-found-produkt.html,not-found-produkt,NOTFOUND-SKU,Not Found Product,Brand,8455156,Техника,MATCHED,,,no product with this sku
+44444444,/p44444444-no-sku-produkt.html,no-sku-produkt,,No SKU Product,Brand,8455156,Техника,NO_SKU,,,satu export missing sku
+55555555,/p55555555-noslug-produkt.html,noslug-produkt,NOSLUG-SKU,No URL Slug Product,Brand,8455156,Техника,MATCHED,,,product exists but url_slug is null

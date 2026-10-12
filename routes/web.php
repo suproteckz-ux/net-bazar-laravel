@@ -8,6 +8,18 @@ use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\InfoController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\SatuRedirectController;
+
+// ── Satu.kz legacy URL redirects ─────────────────────────────────────────────
+// /p{satu_id}-{slug}.html  →  301  →  /product/{url_slug}
+// /g{satu_id}-{slug}       →  301  →  /catalog/{slug} or /catalog?category={id}
+// Populate the redirect tables with: php artisan netbazar:import-satu-redirects
+Route::get('/p{satuId}-{rest}.html', [SatuRedirectController::class, 'product'])
+    ->where(['satuId' => '[0-9]+', 'rest' => '[a-z0-9_-]+'])
+    ->name('satu.product');
+Route::get('/g{satuId}-{rest}', [SatuRedirectController::class, 'category'])
+    ->where(['satuId' => '[0-9]+', 'rest' => '[a-z0-9_-]+'])
+    ->name('satu.category');
 
 // Sitemaps (cached 24 h, no Redis required)
 Route::get('/sitemap.xml',                   [SitemapController::class, 'index'])     ->name('sitemap.index');
