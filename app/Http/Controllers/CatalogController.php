@@ -41,8 +41,7 @@ class CatalogController extends Controller
                 'p.source_photos_json',
                 'kc.photos_json as kaspi_photos_json',
                 'kc.manual_photos_json'
-            )
-            ->orderBy('p.name');
+            );
 
         if ($q !== '') {
             $query->where(function ($w) use ($q) {
@@ -63,6 +62,7 @@ class CatalogController extends Controller
             });
         }
 
+        $query->orderByRaw(self::sortSql())->orderBy('p.name')->orderBy('p.sku');
         $products  = $query->paginate(24)->withQueryString();
         $pageTitle = $selectedCategory
             ? $selectedCategory->name
@@ -109,7 +109,9 @@ class CatalogController extends Controller
                 'kc.photos_json as kaspi_photos_json',
                 'kc.manual_photos_json'
             )
+            ->orderByRaw(self::sortSql())
             ->orderBy('p.name')
+            ->orderBy('p.sku')
             ->paginate(24);
 
         return view('catalog.show', compact(
@@ -129,6 +131,22 @@ class CatalogController extends Controller
             }
         }
         return null;
+    }
+
+    // ─── Sort: in-stock+photo first, then in-stock, then photo-only, then no stock/photo ─
+    private static function sortSql(): string
+    {
+        $hasPhoto = "(
+            (kc.manual_photos_json IS NOT NULL AND kc.manual_photos_json NOT IN ('', '[]', 'null'))
+            OR (kc.photos_json IS NOT NULL AND kc.photos_json NOT IN ('', '[]', 'null'))
+            OR (p.source_photos_json IS NOT NULL AND p.source_photos_json NOT IN ('', '[]', 'null'))
+        )";
+        return "CASE
+            WHEN p.quantity > 0 AND {$hasPhoto} THEN 1
+            WHEN p.quantity > 0                  THEN 2
+            WHEN {$hasPhoto}                      THEN 3
+            ELSE 4
+        END";
     }
 
     private const SLUG_NAMES = [

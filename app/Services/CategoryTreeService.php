@@ -24,10 +24,14 @@ class CategoryTreeService
                 JOIN used u ON c.id = u.id
                 WHERE c.parent_id IS NOT NULL
             )
-            SELECT kc.id, kc.parent_id, kc.name, kc.path
+            SELECT kc.id, kc.parent_id,
+                   COALESCE(o.display_name, kc.name) AS name,
+                   kc.path,
+                   o.display_order
             FROM kaspi_categories kc
+            LEFT JOIN kaspi_category_overrides o ON o.category_id = kc.id
             WHERE kc.id IN (SELECT id FROM used)
-            ORDER BY kc.name
+            ORDER BY COALESCE(o.display_order, 2147483647), kc.name
         ");
     }
 

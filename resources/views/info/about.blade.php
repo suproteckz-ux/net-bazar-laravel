@@ -15,18 +15,37 @@
 
     <div class="nb-info-page">
 
-        <h1 class="nb-h1">О компании NetBazar</h1>
-        <div class="nb-h2-rule"></div>
-
-        {{-- Intro --}}
-        <div class="nb-section">
-            <p class="nb-body" style="font-size:16.5px;line-height:1.8;color:var(--nb-text-2);max-width:780px;">
-                <strong style="color:#fff;">NetBazar — интернет-магазин бытовой техники, офисных кресел и товаров для автомобиля в Алматы.</strong>
-                Компания работает с 2021 года. За это время мы выполнили более 20&nbsp;000 продаж и накопили опыт в подборе товаров, организации доставки и обслуживании покупателей.
-            </p>
-            <p class="nb-body" style="margin-top:14px;max-width:780px;">
-                Мы работаем с физическими и юридическими лицами. Помогаем подобрать товары для дома, офиса и автомобиля.
-            </p>
+        {{-- Hero: 2-column on desktop --}}
+        <div class="nb-info-hero">
+            <div>
+                <h1 class="nb-h1">О компании NetBazar</h1>
+                <div class="nb-h2-rule"></div>
+                <p class="nb-body" style="color:var(--nb-text-2);">
+                    <strong style="color:#fff;">NetBazar — интернет-магазин бытовой техники, офисных кресел и товаров для автомобиля в Алматы.</strong>
+                    Компания работает с 2021 года. За это время мы выполнили более 20&nbsp;000 продаж и накопили опыт в подборе товаров, организации доставки и обслуживании покупателей.
+                </p>
+                <p class="nb-body" style="margin-top:14px;">
+                    Мы работаем с физическими и юридическими лицами. Помогаем подобрать товары для дома, офиса и автомобиля.
+                </p>
+            </div>
+            <div class="nb-info-stats">
+                <div class="nb-info-stat">
+                    <div class="nb-info-stat__value">20 000+</div>
+                    <div class="nb-info-stat__label">Продаж</div>
+                </div>
+                <div class="nb-info-stat">
+                    <div class="nb-info-stat__value">2021</div>
+                    <div class="nb-info-stat__label">Год основания</div>
+                </div>
+                <div class="nb-info-stat">
+                    <div class="nb-info-stat__value">4+</div>
+                    <div class="nb-info-stat__label">Категории товаров</div>
+                </div>
+                <div class="nb-info-stat">
+                    <div class="nb-info-stat__value">KZ</div>
+                    <div class="nb-info-stat__label">Доставка по Казахстану</div>
+                </div>
+            </div>
         </div>
 
         {{-- Assortment --}}

@@ -693,7 +693,31 @@ textarea.nb-input { resize: vertical; min-height: 80px; }
 .nb-drawer__contact-link svg { flex: none; color: var(--nb-accent); }
 
 /* ═══════════════════════ INFO PAGES ════════════════════════════════════════════ */
-.nb-info-page { max-width: 900px; }
+.nb-info-page { width: 100%; }
+
+/* Two-column hero: intro text left, stat cards right */
+.nb-info-hero {
+  display: grid; grid-template-columns: 1fr 300px;
+  gap: 48px; align-items: start; margin-top: 4px;
+}
+
+/* Stat cards grid (2×2) */
+.nb-info-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 4px; }
+.nb-info-stat {
+  background: var(--nb-surface); border: 1px solid var(--nb-line-card);
+  border-radius: var(--nb-r-md); padding: 20px 16px; text-align: center;
+}
+.nb-info-stat__value {
+  font-family: var(--nb-font-display); font-size: 28px; font-weight: 800;
+  color: var(--nb-accent); line-height: 1;
+}
+.nb-info-stat__label {
+  font-size: 11px; font-weight: 600; letter-spacing: .08em;
+  color: var(--nb-muted); text-transform: uppercase; margin-top: 6px;
+}
+
+/* Body copy in info pages slightly larger */
+.nb-info-page .nb-body { font-size: 16.5px; line-height: 1.8; }
 
 .nb-info-cards {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -812,6 +836,9 @@ textarea.nb-input { resize: vertical; min-height: 80px; }
 }
 
 /* ─── Info pages responsive ─── */
+@media (max-width: 960px) {
+  .nb-info-hero { grid-template-columns: 1fr; }
+}
 @media (max-width: 767px) {
   .nb-delivery-row { grid-template-columns: 1fr; }
   .nb-delivery-row--3 { grid-template-columns: 1fr; }
@@ -819,6 +846,7 @@ textarea.nb-input { resize: vertical; min-height: 80px; }
   .nb-footer__disclaimer { text-align: left; }
   .nb-footer__bottom { flex-direction: column; gap: 6px; }
   .nb-info-cards { grid-template-columns: 1fr; }
+  .nb-info-stats { grid-template-columns: 1fr 1fr; }
   .nb-requisites { grid-template-columns: 1fr; }
   .nb-wa-header span { display: none; }
   .nb-wa-header { padding: 0 12px; }
