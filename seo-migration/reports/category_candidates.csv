@@ -1,0 +1,95 @@
+﻿satu_id,path,slug,in_excel,group_name,laravel_candidate,confidence,note
+8455156,/g8455156-bytovaya-tehnika,bytovaya-tehnika,True,Бытовая техника,Kaspi: Бытовая техника,high,root Kaspi category
+8455164,/g8455164-krupnaya-bytovaya-tehnika,krupnaya-bytovaya-tehnika,True,Крупная бытовая техника,NEEDS_MANUAL_CHECK,low,not in known map
+8531101,/g8531101-ofisnye-kresla-almaty,ofisnye-kresla-almaty,True,Офисные кресла в Алматы — каталог NetBazar,Kaspi: Офисные кресла,high,matches footer category
+8819311,/g8819311-avtohimiya-avtokosmetika,avtohimiya-avtokosmetika,True,Автохимия и автокосметика,Kaspi: Автохимия/Автотовары,medium,Satu 'автохимия' → Kaspi tree
+8935471,/g8935471-vinnyj-shkaf-maunfeld,vinnyj-shkaf-maunfeld,True,Винный шкаф Maunfeld,NEEDS_MANUAL_CHECK,low,not in known map
+8985220,/g8985220-elektricheskie-vstraivaemye-varochnye,elektricheskie-vstraivaemye-varochnye,False,,NEEDS_MANUAL_CHECK,low,not in known map
+9118359,/g9118359-termopot,termopot,True,Термопот,NEEDS_MANUAL_CHECK,low,not in known map
+9118417,/g9118417-varochnaya-panel-gazovaya,varochnaya-panel-gazovaya,True,Варочная панель газовая,NEEDS_MANUAL_CHECK,low,not in known map
+9118424,/g9118424-vstraivaemyj-holodilnik,vstraivaemyj-holodilnik,True,Встраиваемый холодильник,Kaspi: Встраиваемые холодильники,high,vstraivaemyj-holodilnik
+9118427,/g9118427-otdelnostoyaschij-holodilnik,otdelnostoyaschij-holodilnik,True,Отдельностоящий холодильник,Kaspi: Холодильники,high,otdelnostoyaschij-holodilnik
+9118429,/g9118429-chajnik-elektricheskij,chajnik-elektricheskij,True,Чайник электрический,NEEDS_MANUAL_CHECK,low,not in known map
+9123622,/g9123622-morozilniki,morozilniki,True,Морозильники,Kaspi: Морозильники,high,morozilniki
+9123624,/g9123624-varochnye-poverhnosti,varochnye-poverhnosti,True,Варочные поверхности,NEEDS_MANUAL_CHECK,low,not in known map
+9133790,/g9133790-stiralnye-mashiny,stiralnye-mashiny,False,,Kaspi: Стиральные машины,high,stiralnye-mashiny
+9133793,/g9133793-dopolnitelnaya-prinadlezhnost,dopolnitelnaya-prinadlezhnost,True,Дополнительная принадлежность,NEEDS_MANUAL_CHECK,low,not in known map
+9157598,/g9157598-avtomobilnye-signalizatsii-pandora,avtomobilnye-signalizatsii-pandora,True,Автомобильные сигнализации Pandora,NEEDS_MANUAL_CHECK,low,not in known map
+9159281,/g9159281-antigel-dlya-dizelnogo,antigel-dlya-dizelnogo,True,Антигель для дизельного топлива,NEEDS_MANUAL_CHECK,low,not in known map
+9160034,/g9160034-holodilniki,holodilniki,True,Холодильники,NEEDS_MANUAL_CHECK,low,not in known map
+9161273,/g9161273-zhidkost-bochek-omyvatelya,zhidkost-bochek-omyvatelya,True,Жидкость в бочек омывателя (незамерзайка),NEEDS_MANUAL_CHECK,low,not in known map
+9161274,/g9161274-aksessuary-dlya-mojki,aksessuary-dlya-mojki,True,"Аксессуары для мойки Авто (микрофибры, кисти, щетки)",NEEDS_MANUAL_CHECK,low,not in known map
+9161276,/g9161276-smazki-dlya-avto,smazki-dlya-avto,True,Смазки для авто,NEEDS_MANUAL_CHECK,low,not in known map
+9161280,/g9161280-prisadki,prisadki,False,,NEEDS_MANUAL_CHECK,low,not in known map
+9161281,/g9161281-avtokosmetika,avtokosmetika,True,Автокосметика,NEEDS_MANUAL_CHECK,low,not in known map
+9161286,/g9161286-raskoksovka-dvigatelya,raskoksovka-dvigatelya,True,Раскоксовка двигателя,NEEDS_MANUAL_CHECK,low,not in known map
+9161595,/g9161595-kofemashina,kofemashina,True,Кофемашина,Kaspi: Кофемашины,medium,kofemashina
+9161625,/g9161625-pylesos,pylesos,True,Пылесос,Kaspi: Пылесосы,medium,pylesos
+9161630,/g9161630-miksery-blendery-izmelchiteli,miksery-blendery-izmelchiteli,False,,NEEDS_MANUAL_CHECK,low,not in known map
+9161635,/g9161635-tostery,tostery,True,Тостеры,NEEDS_MANUAL_CHECK,low,not in known map
+9161922,/g9161922-vytyazhki,vytyazhki,True,Вытяжки,Kaspi: Вытяжки,high,slug vytyazhki
+9162082,/g9162082-melkaya-bytovaya-tehnika,melkaya-bytovaya-tehnika,True,Мелкая бытовая техника,NEEDS_MANUAL_CHECK,low,not in known map
+9162134,/g9162134-klimaticheskaya-tehnika,klimaticheskaya-tehnika,True,Климатическая техника,NEEDS_MANUAL_CHECK,low,not in known map
+9172131,/g9172131-shinepro-moyuschie-pylesosy,shinepro-moyuschie-pylesosy,True,ShinePro моющие пылесосы,NEEDS_MANUAL_CHECK,low,not in known map
+9172904,/g9172904-konditsionery-ochistiteli-kozhi,konditsionery-ochistiteli-kozhi,True,Кондиционеры и очистители кожи,NEEDS_MANUAL_CHECK,low,not in known map
+9172905,/g9172905-uhod-plastikom,uhod-plastikom,True,Уход за пластиком,NEEDS_MANUAL_CHECK,low,not in known map
+9172906,/g9172906-cherniteli-shin,cherniteli-shin,True,Чернители шин,NEEDS_MANUAL_CHECK,low,not in known map
+9173078,/g9173078-poliroli-dlya-kuzova,poliroli-dlya-kuzova,True,Полироли для кузова,NEEDS_MANUAL_CHECK,low,not in known map
+9173079,/g9173079-shampuni-dlya-kuzova,shampuni-dlya-kuzova,True,Шампуни для кузова авто,NEEDS_MANUAL_CHECK,low,not in known map
+9173081,/g9173081-ochistiteli-interera-himchistki,ochistiteli-interera-himchistki,True,Очистители интерьера (химчистки),NEEDS_MANUAL_CHECK,low,not in known map
+9173084,/g9173084-antidozhd-dlya-stekol,antidozhd-dlya-stekol,True,Антидождь для стекол,NEEDS_MANUAL_CHECK,low,not in known map
+9173085,/g9173085-ochistiteli-stekol,ochistiteli-stekol,True,Очистители стекол,NEEDS_MANUAL_CHECK,low,not in known map
+9173086,/g9173086-ochistiteli-diskov,ochistiteli-diskov,True,Очистители дисков,NEEDS_MANUAL_CHECK,low,not in known map
+9173089,/g9173089-preobrazovateli-rzhavchiny-movili,preobrazovateli-rzhavchiny-movili,True,Преобразователи ржавчины (мовили),NEEDS_MANUAL_CHECK,low,not in known map
+9173091,/g9173091-ochistiteli-konditsionera-avto,ochistiteli-konditsionera-avto,True,Очистители кондиционера авто – купить в Алматы,NEEDS_MANUAL_CHECK,low,not in known map
+9173092,/g9173092-ochistiteli-bituma-vodnogo,ochistiteli-bituma-vodnogo,True,"Очистители битума, водного камня, клея (Скотча)",NEEDS_MANUAL_CHECK,low,not in known map
+9173093,/g9173093-ochistiteli-dvigatelya,ochistiteli-dvigatelya,True,Очистители двигателя,NEEDS_MANUAL_CHECK,low,not in known map
+9183593,/g9183593-melkaya-tehnika-dlya,melkaya-tehnika-dlya,True,Мелкая техника для кухни,NEEDS_MANUAL_CHECK,low,not in known map
+9183650,/g9183650-pechi-grili,pechi-grili,False,,NEEDS_MANUAL_CHECK,low,not in known map
+9254585,/g9254585-kofemashiny-kofevarki,kofemashiny-kofevarki,True,Кофемашины и кофеварки,Kaspi: Кофемашины,medium,second kofemashiny ID
+9254752,/g9254752-dispensery-kulery-dlya,dispensery-kulery-dlya,True,Диспенсеры и кулеры для воды,Kaspi: Кулеры для воды,high,slug dispensery-kulery matches
+9268570,/g9268570-dlya-posetitelej,dlya-posetitelej,False,,Kaspi: Офисные кресла (посетители),medium,dlya-posetitelej
+9268599,/g9268599-kozhanye,kozhanye,True,Кожаные,Kaspi: Офисные кресла (кожаные),medium,kozhanye
+9268602,/g9268602-podgolovnikom,podgolovnikom,True,C подголовником,NEEDS_MANUAL_CHECK,low,not in known map
+9268609,/g9268609-bez-podgolovnika,bez-podgolovnika,True,Без подголовника,NEEDS_MANUAL_CHECK,low,not in known map
+9268615,/g9268615-tkanevoj-obivkoj,tkanevoj-obivkoj,True,С тканевой обивкой,NEEDS_MANUAL_CHECK,low,not in known map
+9268616,/g9268616-stulya-dlya-obucheniya,stulya-dlya-obucheniya,True,Стулья для обучения,NEEDS_MANUAL_CHECK,low,not in known map
+9320471,/g9320471-kulery-dlya-vody,kulery-dlya-vody,True,"Кулеры для воды, диспенсеры напольные, Алматы, доставка по Казахстану",Kaspi: Кулеры для воды,high,slug kulery-dlya-vody
+9320473,/g9320473-kulery-dlya-vody,kulery-dlya-vody,True,"Кулеры для воды настольные, диспенсеры, Алматы, доставка по Казахстану",Kaspi: Кулеры для воды,medium,second kulery ID — check if different subcategory
+9320481,/g9320481-purifajer-protochnyj-kuler,purifajer-protochnyj-kuler,True,"Пурифайер проточный кулер для воды Алматы, доставка по Казахстану",Kaspi: Пурифайеры/Кулеры,medium,purifajer
+9320482,/g9320482-napolnyj-dispenser-dlya,napolnyj-dispenser-dlya,True,"Напольный диспенсер для воды Teabar, Алматы доставка по Казахстану",NEEDS_MANUAL_CHECK,low,not in known map
+9320485,/g9320485-komplektuyuschie-dlya-kulerov,komplektuyuschie-dlya-kulerov,True,"Комплектующие для кулеров, диспенсеров, Пурифайеров, Алматы доставка по Казахста",NEEDS_MANUAL_CHECK,low,not in known map
+9452141,/g9452141-ochistitel-dmrv,ochistitel-dmrv,True,Очиститель ДМРВ,NEEDS_MANUAL_CHECK,low,not in known map
+9457762,/g9457762-eikosha-aromatizatory,eikosha-aromatizatory,True,Eikosha ароматизаторы,NEEDS_MANUAL_CHECK,low,not in known map
+9467281,/g9467281-kisti-schetki-dlya,kisti-schetki-dlya,True,"Кисти и щетки для химчистки, детейлинга",NEEDS_MANUAL_CHECK,low,not in known map
+9467282,/g9467282-mikrofibry-polotentsa-dlya,mikrofibry-polotentsa-dlya,True,Микрофибры и полотенца для сушки авто,NEEDS_MANUAL_CHECK,low,not in known map
+9467345,/g9467345-gubki-rukavitsy-dlya,gubki-rukavitsy-dlya,True,Губки и рукавицы для мойки,NEEDS_MANUAL_CHECK,low,not in known map
+9467346,/g9467346-aksessuary-dlya-mojki,aksessuary-dlya-mojki,True,Аксессуары для мойки и химчистки авто,NEEDS_MANUAL_CHECK,low,not in known map
+9526888,/g9526888-mikrovolnovye-pechi,mikrovolnovye-pechi,True,Микроволновые печи,Kaspi: Микроволновые печи,high,mikrovolnovye-pechi
+9568578,/g9568578-vytyazhki,vytyazhki,True,Вытяжки,Kaspi: Вытяжки,medium,second vytyazhki ID
+9568582,/g9568582-vodonagrevateli,vodonagrevateli,True,Водонагреватели,NEEDS_MANUAL_CHECK,low,not in known map
+9568583,/g9568583-holodilniki,holodilniki,True,Холодильники,NEEDS_MANUAL_CHECK,low,not in known map
+9568586,/g9568586-stiralnye-mashiny,stiralnye-mashiny,True,Стиральные машины,NEEDS_MANUAL_CHECK,low,not in known map
+9568587,/g9568587-sushilki,sushilki,True,Сушилки,NEEDS_MANUAL_CHECK,low,not in known map
+9568589,/g9568589-morozilnaya-lar,morozilnaya-lar,True,Морозильная ларь,NEEDS_MANUAL_CHECK,low,not in known map
+9568590,/g9568590-konditsionery,konditsionery,False,,NEEDS_MANUAL_CHECK,low,not in known map
+9568591,/g9568591-duhovye-shkafy,duhovye-shkafy,True,Духовые шкафы,Kaspi: Духовые шкафы,high,duhovye-shkafy
+9568592,/g9568592-mikrovolnovaya-pech,mikrovolnovaya-pech,True,Микроволновая печь,NEEDS_MANUAL_CHECK,low,not in known map
+9568594,/g9568594-elektricheskie-poverhnosti,elektricheskie-poverhnosti,True,Электрические поверхности,NEEDS_MANUAL_CHECK,low,not in known map
+9568597,/g9568597-posudomoechnye-mashiny,posudomoechnye-mashiny,True,Посудомоечные машины,Kaspi: Посудомоечные машины,high,posudomoechnye-mashiny
+9568598,/g9568598-sushilnye-mashiny,sushilnye-mashiny,True,Сушильные машины,NEEDS_MANUAL_CHECK,low,not in known map
+9568612,/g9568612-kofevarki-kofemashiny,kofevarki-kofemashiny,True,Кофеварки и кофемашины,NEEDS_MANUAL_CHECK,low,not in known map
+9576372,/g9576372-vodonagrevateli,vodonagrevateli,True,Водонагреватели,NEEDS_MANUAL_CHECK,low,not in known map
+9589556,/g9589556-batarejki,batarejki,True,Батарейки,NO_MATCH,low,batareyki — нет в Kaspi дереве
+9612033,/g9612033-ochistiteli-poliroli-dlya,ochistiteli-poliroli-dlya,True,Очистители и полироли для шин и дисков автомобилей,NEEDS_MANUAL_CHECK,low,not in known map
+9612091,/g9612091-uhod-steklami-farami,uhod-steklami-farami,True,Уход за стеклами и фарами автомобилей,NEEDS_MANUAL_CHECK,low,not in known map
+9612098,/g9612098-avtoshampuni-peny-dlya,avtoshampuni-peny-dlya,True,Автошампуни и пены для мойки,NEEDS_MANUAL_CHECK,low,not in known map
+9612101,/g9612101-stroitelnyj-inventar,stroitelnyj-inventar,True,Строительный инвентарь,NO_MATCH,low,stroitelnyj-inventar — нет в каталоге
+9612104,/g9612104-antidozhd-dlya-avtostekol,antidozhd-dlya-avtostekol,True,Антидождь для автостекол,NEEDS_MANUAL_CHECK,low,not in known map
+9612105,/g9612105-sredstva-individualnoj-zaschity,sredstva-individualnoj-zaschity,True,Средства индивидуальной защиты,NEEDS_MANUAL_CHECK,low,not in known map
+9612107,/g9612107-pasty-dlya-ochistki,pasty-dlya-ochistki,True,Пасты для очистки рук от сильных загрязнений,NEEDS_MANUAL_CHECK,low,not in known map
+9714772,/g9714772-prinadlezhnosti-dlya-mojki,prinadlezhnosti-dlya-mojki,True,Принадлежности для мойки автомобилей,NEEDS_MANUAL_CHECK,low,not in known map
+9716353,/g9716353-vytyazhki,vytyazhki,True,Вытяжки,Kaspi: Вытяжки,medium,third vytyazhki ID
+9739978,/g9739978-duhovye-shkafy,duhovye-shkafy,True,Духовые шкафы,NEEDS_MANUAL_CHECK,low,not in known map
+9740001,/g9740001-izmelchiteli-pischevyh-othodov,izmelchiteli-pischevyh-othodov,True,Измельчители пищевых отходов,NEEDS_MANUAL_CHECK,low,not in known map
+9740022,/g9740022-aksessuary-dlya-kuhonnoj,aksessuary-dlya-kuhonnoj,True,Аксессуары для кухонной техники,NEEDS_MANUAL_CHECK,low,not in known map
