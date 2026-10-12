@@ -129,7 +129,7 @@ class AuditSatuMapping extends Command
 
         $out = [
             'old_url'       => $row['path']    ?? '',
-            'satu_id'       => $row['satu_id'] ?? '',
+            'satu_id'       => $this->resolveSatuId($row),
             'original_sku'  => $csvSku,
             'actual_sku'    => '',
             'present'       => '',
@@ -237,6 +237,29 @@ class AuditSatuMapping extends Command
 
     // ── CSV I/O ───────────────────────────────────────────────────────────────
 
+    /**
+     * Resolve satu_id from the CSV row.
+     *
+     * Primary source: explicit 'satu_id' column.
+     * Fallback: parse the numeric ID from the path segment /p{id}-{slug}.html.
+     * This handles UTF-8 BOM files where the first column header is corrupted
+     * ("\xEF\xBB\xBFsatu_id") and the column lookup silently returns null.
+     */
+    private function resolveSatuId(array $row): string
+    {
+        $fromCol = trim($row['satu_id'] ?? '');
+        if ($fromCol !== '') {
+            return $fromCol;
+        }
+
+        $path = $row['path'] ?? '';
+        if (preg_match('|^/p(\d+)-|', $path, $m)) {
+            return $m[1];
+        }
+
+        return '';
+    }
+
     private function parseCsv(string $path): array
     {
         $handle = fopen($path, 'r');
@@ -248,6 +271,12 @@ class AuditSatuMapping extends Command
         if ($header === false) {
             fclose($handle);
             return [];
+        }
+        // Strip UTF-8 BOM (\xEF\xBB\xBF) from the first column header.
+        // Python's csv/openpyxl on Windows writes BOM-prefixed UTF-8, which
+        // corrupts the first key and makes $row['satu_id'] return null.
+        if (isset($header[0])) {
+            $header[0] = ltrim($header[0], "\xEF\xBB\xBF");
         }
         $header   = array_map('trim', $header);
         $colCount = count($header);

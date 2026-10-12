@@ -335,4 +335,58 @@ class AuditSatuMappingTest extends TestCase
         $this->artisan('seo:audit-satu-mapping', ['--csv' => '/nonexistent/path.csv'])
             ->assertFailed();
     }
+
+    // ─── satu_id extraction ───────────────────────────────────────────────────
+
+    /**
+     * Reproduces the production bug: the source CSV has a UTF-8 BOM which
+     * corrupts the first column header to "\xEF\xBB\xBFsatu_id", making
+     * $row['satu_id'] return null. The fix extracts the ID from the path.
+     */
+    public function test_satu_id_extracted_from_path_when_column_is_bom_corrupted(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'seo_bom_') . '.csv';
+        $fh   = fopen($path, 'wb');
+
+        // Write UTF-8 BOM before the header — exactly what Python's csv writer
+        // produces on Windows when the file is opened with encoding='utf-8-sig'.
+        fwrite($fh, "\xEF\xBB\xBF");
+        fputcsv($fh, ['satu_id', 'path', 'slug', 'sku', 'name', 'mfr', 'grp_num', 'grp_name', 'status', 'db_status', 'target_url', 'note']);
+        fputcsv($fh, ['104372827', '/p104372827-vstraivaemyj-morozilnik.html', 'slug', '', 'Name', '', '0', 'C', 'NO_SKU', '', '', '']);
+        fclose($fh);
+
+        $out = $this->makeOutputPath();
+
+        $this->artisan('seo:audit-satu-mapping', ['--csv' => $path, '--output' => $out])
+            ->assertSuccessful();
+
+        $rows = $this->parseOutput($out);
+        // BOM is stripped → column 'satu_id' is correctly read as '104372827'
+        $this->assertArrayHasKey('104372827', $rows, 'satu_id must be keyed by 104372827');
+        $this->assertSame('104372827', $rows['104372827']['satu_id']);
+
+        unlink($path);
+    }
+
+    public function test_satu_id_extracted_from_path_when_column_is_empty(): void
+    {
+        // Simulate a CSV where satu_id column exists but all values are empty
+        // (e.g. a different export format). The path always contains the ID.
+        $path = tempnam(sys_get_temp_dir(), 'seo_noid_') . '.csv';
+        $fh   = fopen($path, 'w');
+        fputcsv($fh, ['satu_id', 'path', 'slug', 'sku', 'name', 'mfr', 'grp_num', 'grp_name', 'status', 'db_status', 'target_url', 'note']);
+        fputcsv($fh, ['', '/p987654321-some-product.html', 'slug', '', 'Name', '', '0', 'C', 'NO_SKU', '', '', '']);
+        fclose($fh);
+
+        $out = $this->makeOutputPath();
+
+        $this->artisan('seo:audit-satu-mapping', ['--csv' => $path, '--output' => $out])
+            ->assertSuccessful();
+
+        $rows = $this->parseOutput($out);
+        $this->assertArrayHasKey('987654321', $rows, 'satu_id must be extracted from path');
+        $this->assertSame('987654321', $rows['987654321']['satu_id']);
+
+        unlink($path);
+    }
 }
