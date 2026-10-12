@@ -10,7 +10,12 @@
         <a href="{{ route('home') }}">Главная</a>
         <span class="nb-sep" aria-hidden="true">›</span>
         <a href="{{ route('catalog.index') }}">Каталог</a>
-        @if(!empty($product->category_name))
+        @if(!empty($kaspiCrumbs))
+            @foreach($kaspiCrumbs as $crumb)
+                <span class="nb-sep" aria-hidden="true">›</span>
+                <a href="{{ route('catalog.index', ['category' => $crumb->id]) }}">{{ $crumb->name }}</a>
+            @endforeach
+        @elseif(!empty($product->category_name))
             <span class="nb-sep" aria-hidden="true">›</span>
             <span>{{ $product->category_name }}</span>
         @endif

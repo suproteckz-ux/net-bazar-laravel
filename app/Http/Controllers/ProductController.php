@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ProductController extends Controller
 {
@@ -48,11 +49,56 @@ class ProductController extends Controller
             abort(404, "Товар с артикулом «{$sku}» не найден.");
         }
 
-        $photos     = $this->resolvePhotos($product);
-        $attributes = $this->parseAttributes($product->attributes_json ?? null);
-        $stockLabel = $this->stockLabel($product);
+        $photos      = $this->resolvePhotos($product);
+        $attributes  = $this->parseAttributes($product->attributes_json ?? null);
+        $stockLabel  = $this->stockLabel($product);
+        $kaspiCrumbs = $this->resolveKaspiCrumbs($sku);
 
-        return view('product.show', compact('product', 'photos', 'attributes', 'stockLabel'));
+        return view('product.show', compact('product', 'photos', 'attributes', 'stockLabel', 'kaspiCrumbs'));
+    }
+
+    /**
+     * Load Kaspi category ancestors for this SKU, root→leaf order, with override display names.
+     * Mirrors the same product_kaspi_categories + kaspi_category_overrides join used in the catalog.
+     */
+    private function resolveKaspiCrumbs(string $sku): array
+    {
+        if (!Schema::hasTable('kaspi_category_overrides')) {
+            return DB::select("
+                WITH RECURSIVE chain(id, parent_id) AS (
+                    SELECT kc.id, kc.parent_id
+                    FROM product_kaspi_categories pkc
+                    JOIN kaspi_categories kc ON kc.id = pkc.category_id
+                    WHERE pkc.sku = ?
+                    UNION ALL
+                    SELECT kc.id, kc.parent_id
+                    FROM kaspi_categories kc
+                    JOIN chain c ON c.parent_id = kc.id
+                )
+                SELECT kc.id, kc.name
+                FROM chain c
+                JOIN kaspi_categories kc ON kc.id = c.id
+                ORDER BY LENGTH(kc.path)
+            ", [$sku]);
+        }
+
+        return DB::select("
+            WITH RECURSIVE chain(id, parent_id) AS (
+                SELECT kc.id, kc.parent_id
+                FROM product_kaspi_categories pkc
+                JOIN kaspi_categories kc ON kc.id = pkc.category_id
+                WHERE pkc.sku = ?
+                UNION ALL
+                SELECT kc.id, kc.parent_id
+                FROM kaspi_categories kc
+                JOIN chain c ON c.parent_id = kc.id
+            )
+            SELECT kc.id, COALESCE(o.display_name, kc.name) AS name
+            FROM chain c
+            JOIN kaspi_categories kc ON kc.id = c.id
+            LEFT JOIN kaspi_category_overrides o ON o.category_id = kc.id
+            ORDER BY LENGTH(kc.path)
+        ", [$sku]);
     }
 
     private function resolvePhotos(object $product): array
