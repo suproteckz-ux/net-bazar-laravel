@@ -332,7 +332,9 @@ class KaspiEnrichmentController extends Controller
 
                 foreach ($path as $node) {
                     $names[] = $node['name'];
-                    $ident   = substr(hash('sha256', json_encode($names, JSON_UNESCAPED_UNICODE)), 0, 24);
+                    // Python json.dumps default separators use space after comma: ["A", "B"]
+                    $json    = str_replace('","', '", "', json_encode($names, JSON_UNESCAPED_UNICODE));
+                    $ident   = substr(hash('sha256', $json), 0, 24);
                     DB::table('kaspi_categories')->insertOrIgnore([
                         'id'        => $ident,
                         'parent_id' => $parent,

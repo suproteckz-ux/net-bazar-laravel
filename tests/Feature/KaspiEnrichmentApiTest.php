@@ -275,6 +275,134 @@ class KaspiEnrichmentApiTest extends TestCase
         ]);
     }
 
+    // ─── Category ID Generation (Python-compatible SHA-256) ──────────────────
+
+    public function test_rebuild_tree_generates_python_compatible_id_for_exhaust(): void
+    {
+        $sku = 'GS-BLOC-GS-900-WHITE';
+        $url = 'https://kaspi.kz/shop/p/gs-bloc-gs-900-white-12345678/';
+        $this->seedProduct($sku);
+        $this->seedLookup($sku, $url);
+
+        $this->withHeader('Authorization', 'Bearer ' . $this->token)
+            ->postJson('/api/kaspi/content', $this->contentPayloadWithPath($sku, $url, [
+                'Бытовая техника', 'Крупная техника для дома', 'Вытяжки',
+            ]))
+            ->assertOk()
+            ->assertJson(['status' => 'ready']);
+
+        $row = DB::table('product_kaspi_categories')->where('sku', $sku)->first();
+        $this->assertNotNull($row, 'product_kaspi_categories row missing');
+        $this->assertSame('b03186f32cc9f323b8ce1589', $row->category_id);
+    }
+
+    public function test_rebuild_tree_generates_python_compatible_id_for_cooler(): void
+    {
+        $sku = 'COOLER-SKU-671143194';
+        $url = 'https://kaspi.kz/shop/p/cooler-671143194-99999999/';
+        $this->seedProduct($sku);
+        $this->seedLookup($sku, $url);
+
+        $this->withHeader('Authorization', 'Bearer ' . $this->token)
+            ->postJson('/api/kaspi/content', $this->contentPayloadWithPath($sku, $url, [
+                'Бытовая техника', 'Крупная техника для дома', 'Кулеры для воды',
+            ]))
+            ->assertOk()
+            ->assertJson(['status' => 'ready']);
+
+        $row = DB::table('product_kaspi_categories')->where('sku', $sku)->first();
+        $this->assertNotNull($row, 'product_kaspi_categories row missing');
+        $this->assertSame('3b50c632c5fcf97505984a51', $row->category_id);
+    }
+
+    public function test_rebuild_tree_generates_python_compatible_id_for_microwave(): void
+    {
+        $sku = 'BIMO-15-01N-WH';
+        $url = 'https://kaspi.kz/shop/p/bimo-15-01n-wh-12345678/';
+        $this->seedProduct($sku);
+        $this->seedLookup($sku, $url);
+
+        $this->withHeader('Authorization', 'Bearer ' . $this->token)
+            ->postJson('/api/kaspi/content', $this->contentPayloadWithPath($sku, $url, [
+                'Бытовая техника', 'Кухонные приборы для готовки', 'Плиты и гриль', 'Микроволновые печи',
+            ]))
+            ->assertOk()
+            ->assertJson(['status' => 'ready']);
+
+        $row = DB::table('product_kaspi_categories')->where('sku', $sku)->first();
+        $this->assertNotNull($row, 'product_kaspi_categories row missing');
+        // sha256('["Бытовая техника", "Кухонные приборы для готовки", "Плиты и гриль", "Микроволновые печи"]')[:24]
+        $this->assertSame('c64e107d7e4e805b6a488992', $row->category_id);
+    }
+
+    public function test_rebuild_tree_preserves_category_overrides(): void
+    {
+        $sku = 'OVERRIDE-TEST-SKU-001';
+        $url = 'https://kaspi.kz/shop/p/override-test-12345678/';
+        $this->seedProduct($sku);
+        $this->seedLookup($sku, $url);
+
+        $payload = $this->contentPayloadWithPath($sku, $url, ['Бытовая техника', 'Вытяжки']);
+
+        $this->withHeader('Authorization', 'Bearer ' . $this->token)
+            ->postJson('/api/kaspi/content', $payload)
+            ->assertOk();
+
+        $categoryId = DB::table('product_kaspi_categories')->where('sku', $sku)->value('category_id');
+        $this->assertNotNull($categoryId);
+
+        DB::table('kaspi_category_overrides')->insert([
+            'category_id'  => $categoryId,
+            'display_name' => 'Custom Display Name',
+        ]);
+
+        // Second push triggers a full rebuild
+        $this->withHeader('Authorization', 'Bearer ' . $this->token)
+            ->postJson('/api/kaspi/content', $payload)
+            ->assertOk();
+
+        $override = DB::table('kaspi_category_overrides')->where('category_id', $categoryId)->first();
+        $this->assertNotNull($override, 'Override was deleted during rebuild');
+        $this->assertSame('Custom Display Name', $override->display_name);
+    }
+
+    public function test_catalog_tree_excludes_products_without_resolved_lookup(): void
+    {
+        $this->seedProduct('EXCLUDED-SKU-001');
+
+        DB::table('kaspi_content')->insert([
+            'sku'                => 'EXCLUDED-SKU-001',
+            'url'                => 'https://kaspi.kz/shop/p/excluded-sku-99999999/',
+            'description'        => 'Test',
+            'attributes_json'    => '[]',
+            'photos_json'        => '[]',
+            'category_path_json' => '[]',
+            'breadcrumbs_json'   => '[]',
+            'status'             => 'ready',
+            'detail'             => '',
+            'source_sha256'      => str_repeat('b', 64),
+            'received_at'        => now(),
+        ]);
+
+        // Manually insert category and mapping to bypass rebuildTree (which already requires resolved lookup)
+        DB::table('kaspi_categories')->insert([
+            'id'        => 'excl-cat-test-id-000001',
+            'parent_id' => null,
+            'name'      => 'Should Not Appear',
+            'path'      => 'Should Not Appear',
+            'source_id' => 'excl1',
+        ]);
+        DB::table('product_kaspi_categories')->insert([
+            'sku'         => 'EXCLUDED-SKU-001',
+            'category_id' => 'excl-cat-test-id-000001',
+        ]);
+
+        $service = new \App\Services\CategoryTreeService();
+        $ids     = array_map(fn ($c) => $c->id, $service->getPublicCategories());
+
+        $this->assertNotContains('excl-cat-test-id-000001', $ids);
+    }
+
     public function test_widget_result_rejects_wrong_partner_id(): void
     {
         $this->seedProduct('SKU-001');
@@ -345,6 +473,27 @@ class KaspiEnrichmentApiTest extends TestCase
             'category_path' => [],
             'detail'        => 'Full category path unavailable',
             'source_sha256' => 'abc123def456abc123def456abc123def456abc123def456abc123def456abc1',
+        ];
+    }
+
+    private function contentPayloadWithPath(string $sku, string $url, array $pathNames): array
+    {
+        $breadcrumbs = [['name' => 'Kaspi Магазин', 'url' => '/shop/c/categories/']];
+        foreach ($pathNames as $i => $name) {
+            $breadcrumbs[] = ['id' => 'src-' . $i, 'name' => $name, 'url' => '/shop/c/level' . $i . '/'];
+        }
+        $category_path = array_slice($breadcrumbs, 1);
+        return [
+            'sku'           => $sku,
+            'url'           => $url,
+            'status'        => 'ready',
+            'description'   => 'Test',
+            'attributes'    => [],
+            'images'        => ['https://resources.cdn-kaspi.kz/img/test.jpg'],
+            'breadcrumbs'   => $breadcrumbs,
+            'category_path' => $category_path,
+            'detail'        => '',
+            'source_sha256' => hash('sha256', implode(',', $pathNames)),
         ];
     }
 }

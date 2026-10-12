@@ -23,6 +23,7 @@ class CategoryTreeService
                     FROM product_kaspi_categories a
                     JOIN products p ON p.sku = a.sku AND p.present = 1
                     JOIN kaspi_content e ON e.sku = a.sku AND e.status = 'ready'
+                    JOIN kaspi_lookup kl ON kl.sku = e.sku AND kl.url = e.url AND kl.status = 'resolved'
                     UNION
                     SELECT c.parent_id
                     FROM kaspi_categories c
@@ -42,6 +43,7 @@ class CategoryTreeService
                 FROM product_kaspi_categories a
                 JOIN products p ON p.sku = a.sku AND p.present = 1
                 JOIN kaspi_content e ON e.sku = a.sku AND e.status = 'ready'
+                JOIN kaspi_lookup kl ON kl.sku = e.sku AND kl.url = e.url AND kl.status = 'resolved'
                 UNION
                 SELECT c.parent_id
                 FROM kaspi_categories c
