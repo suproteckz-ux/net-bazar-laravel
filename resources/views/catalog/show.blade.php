@@ -2,6 +2,8 @@
 
 @section('title', $categoryName . ' — NetBazar')
 
+@section('meta_description', 'Купить ' . mb_strtolower($categoryName) . ' в Алматы и с доставкой по Казахстану. Широкий выбор, лучшие цены — NetBazar.')
+
 @section('content')
 <div class="nb-page">
 

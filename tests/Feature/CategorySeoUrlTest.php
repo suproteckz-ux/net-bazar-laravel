@@ -372,14 +372,42 @@ class CategorySeoUrlTest extends TestCase
         $this->assertStringContainsString('/catalog/shkafy', $body);
     }
 
-    public function test_sitemap_categories_falls_back_to_marketing_when_no_kaspi_slugs(): void
+    public function test_sitemap_categories_always_includes_marketing_slugs(): void
     {
-        // No kaspi_categories with url_slug at all → fallback
+        // Even with kaspi slugs present, the 5 marketing pages must remain in the sitemap.
+        $this->seedCategory('cat-ms1', 'Диваны', null, 'divany-test');
+
         Cache::flush();
         $body = $this->get('/sitemap-categories.xml')->assertOk()->getContent();
 
-        $this->assertStringContainsString('/catalog/bytovaya-tehnika', $body);
-        $this->assertStringContainsString('/catalog/kresla', $body);
+        foreach (['bytovaya-tehnika', 'kresla', 'kulery-dlya-vody', 'himiya', 'avtoaksessuary'] as $slug) {
+            $this->assertStringContainsString('/catalog/' . $slug, $body, "Marketing slug '{$slug}' missing from sitemap");
+        }
+        $this->assertStringContainsString('/catalog/divany-test', $body, 'Kaspi slug also present');
+    }
+
+    public function test_sitemap_categories_has_no_duplicate_urls(): void
+    {
+        $this->seedCategory('cat-dup1', 'Диваны',  null, 'divany-nodup');
+        $this->seedCategory('cat-dup2', 'Кресла',  null, 'kresla-nodup');
+
+        Cache::flush();
+        $body = $this->get('/sitemap-categories.xml')->assertOk()->getContent();
+
+        preg_match_all('|<loc>(.*?)</loc>|', $body, $m);
+        $locs = $m[1];
+        $this->assertSame(count($locs), count(array_unique($locs)), 'Sitemap must not contain duplicate <loc> URLs');
+    }
+
+    public function test_sitemap_includes_all_five_marketing_slugs_when_no_kaspi_slugs(): void
+    {
+        // No kaspi_categories with url_slug → marketing slugs still present (not a "fallback" anymore)
+        Cache::flush();
+        $body = $this->get('/sitemap-categories.xml')->assertOk()->getContent();
+
+        foreach (['bytovaya-tehnika', 'kresla', 'kulery-dlya-vody', 'himiya', 'avtoaksessuary'] as $slug) {
+            $this->assertStringContainsString('/catalog/' . $slug, $body);
+        }
     }
 
     public function test_sitemap_categories_excludes_categories_without_slug(): void
