@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Montserrat:wght@700;800;900&display=swap&subset=cyrillic" rel="stylesheet">
 
-    <link rel="stylesheet" href="/css/netbazar.css">
+    <link rel="stylesheet" href="/css/netbazar.css?v={{ filemtime(public_path('css/netbazar.css')) }}">
 </head>
 <body>
 
@@ -185,7 +185,7 @@
                 Доставка по Алматы и Казахстану.
             </p>
             <address class="nb-footer__address">
-                <a href="https://2gis.kz/almaty/search/ул Муратбаева 138" target="_blank" rel="noopener noreferrer">
+                <a href="https://go.2gis.com/mhnXg" target="_blank" rel="noopener noreferrer">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     Алматы, ул. Муратбаева, 138
                 </a>
@@ -249,6 +249,6 @@
     </div>
 </footer>
 
-<script src="/js/storefront.js" defer></script>
+<script src="/js/storefront.js?v={{ filemtime(public_path('js/storefront.js')) }}" defer></script>
 </body>
 </html>
