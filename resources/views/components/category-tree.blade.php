@@ -1,9 +1,11 @@
 @props(['nodes', 'activePath' => [], 'depth' => 1])
 {{--
     Recursive category tree component — design spec class names.
-    $nodes      : array of tree nodes (objects with ->id, ->name, ->children)
+    $nodes      : array of tree nodes (objects with ->id, ->name, ->url_slug, ->children)
     $activePath : array of category IDs from selected node up to root
     $depth      : 1–4 (controls indent + ink + size via nb-tree--l{n})
+
+    Links use /catalog/{url_slug} when available; fall back to /catalog?category={id}.
 --}}
 <ul class="nb-tree nb-tree--l{{ $depth }}">
     @foreach ($nodes as $node)
@@ -11,10 +13,13 @@
             $hasChildren = !empty($node->children);
             $isOpen      = in_array($node->id, $activePath, true);
             $isActive    = ($activePath !== [] && $node->id === end($activePath));
+            $href        = !empty($node->url_slug)
+                ? route('catalog.show', ['slug' => $node->url_slug])
+                : route('catalog.index', ['category' => $node->id]);
         @endphp
         <li>
             <a class="nb-tree__row{{ $isActive ? ' is-active' : '' }}"
-               href="{{ route('catalog.index', ['category' => $node->id]) }}"
+               href="{{ $href }}"
                @if($hasChildren) aria-expanded="{{ $isOpen ? 'true' : 'false' }}" @endif>
                 @if($hasChildren)
                     <span class="nb-tree__chev" aria-hidden="true">&#9656;</span>

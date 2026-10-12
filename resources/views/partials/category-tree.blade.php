@@ -22,14 +22,14 @@
                     </summary>
                     {{-- "All products in section" link — mirrors Python's "Все товары раздела" --}}
                     <a class="cat-tree-link cat-tree-all {{ $isActive ? 'is-active' : '' }}"
-                       href="{{ route('catalog.index', ['category' => $cat->id]) }}">
+                       href="{{ !empty($cat->url_slug) ? route('catalog.show', ['slug' => $cat->url_slug]) : route('catalog.index', ['category' => $cat->id]) }}">
                         Все товары раздела
                     </a>
                     @include('partials.category-tree', ['nodes' => $cat->children])
                 </details>
             @else
                 <a class="cat-tree-link {{ $isActive ? 'is-active' : '' }}"
-                   href="{{ route('catalog.index', ['category' => $cat->id]) }}">
+                   href="{{ !empty($cat->url_slug) ? route('catalog.show', ['slug' => $cat->url_slug]) : route('catalog.index', ['category' => $cat->id]) }}">
                     {{ $cat->name }}
                 </a>
             @endif

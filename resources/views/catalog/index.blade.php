@@ -26,7 +26,8 @@
                 @if($ancestor->id === $selectedCategory->id)
                     <span aria-current="page">{{ $ancestor->name }}</span>
                 @else
-                    <a href="{{ route('catalog.index', ['category' => $ancestor->id]) }}">{{ $ancestor->name }}</a>
+                    @php $ancHref = !empty($ancestor->url_slug) ? route('catalog.show', ['slug' => $ancestor->url_slug]) : route('catalog.index', ['category' => $ancestor->id]); @endphp
+                    <a href="{{ $ancHref }}">{{ $ancestor->name }}</a>
                 @endif
             @endforeach
         @elseif($q)

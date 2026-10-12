@@ -30,7 +30,7 @@ class CategoryTreeService
                     JOIN used u ON c.id = u.id
                     WHERE c.parent_id IS NOT NULL
                 )
-                SELECT kc.id, kc.parent_id, kc.name, kc.path
+                SELECT kc.id, kc.parent_id, kc.name, kc.path, kc.url_slug
                 FROM kaspi_categories kc
                 WHERE kc.id IN (SELECT id FROM used)
                 ORDER BY kc.name
@@ -53,6 +53,7 @@ class CategoryTreeService
             SELECT kc.id, kc.parent_id,
                    COALESCE(o.display_name, kc.name) AS name,
                    kc.path,
+                   kc.url_slug,
                    o.display_order
             FROM kaspi_categories kc
             LEFT JOIN kaspi_category_overrides o ON o.category_id = kc.id

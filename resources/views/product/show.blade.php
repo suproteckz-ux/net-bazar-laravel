@@ -13,7 +13,7 @@
         @if(!empty($kaspiCrumbs))
             @foreach($kaspiCrumbs as $crumb)
                 <span class="nb-sep" aria-hidden="true">›</span>
-                <a href="{{ route('catalog.index', ['category' => $crumb->id]) }}">{{ $crumb->name }}</a>
+                <a href="{{ !empty($crumb->url_slug) ? route('catalog.show', ['slug' => $crumb->url_slug]) : route('catalog.index', ['category' => $crumb->id]) }}">{{ $crumb->name }}</a>
             @endforeach
         @elseif(!empty($product->category_name))
             <span class="nb-sep" aria-hidden="true">›</span>

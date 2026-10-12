@@ -116,7 +116,7 @@ class ProductController extends Controller
                     FROM kaspi_categories kc
                     JOIN chain c ON c.parent_id = kc.id
                 )
-                SELECT kc.id, kc.name
+                SELECT kc.id, kc.name, kc.url_slug
                 FROM chain c
                 JOIN kaspi_categories kc ON kc.id = c.id
                 ORDER BY LENGTH(kc.path)
@@ -134,7 +134,7 @@ class ProductController extends Controller
                 FROM kaspi_categories kc
                 JOIN chain c ON c.parent_id = kc.id
             )
-            SELECT kc.id, COALESCE(o.display_name, kc.name) AS name
+            SELECT kc.id, COALESCE(o.display_name, kc.name) AS name, kc.url_slug
             FROM chain c
             JOIN kaspi_categories kc ON kc.id = c.id
             LEFT JOIN kaspi_category_overrides o ON o.category_id = kc.id
