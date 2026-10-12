@@ -7,6 +7,16 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\InfoController;
+use App\Http\Controllers\SitemapController;
+
+// Sitemaps (cached 24 h, no Redis required)
+Route::get('/sitemap.xml',                   [SitemapController::class, 'index'])     ->name('sitemap.index');
+Route::get('/sitemap-pages.xml',             [SitemapController::class, 'pages'])     ->name('sitemap.pages');
+Route::get('/sitemap-categories.xml',        [SitemapController::class, 'categories'])->name('sitemap.categories');
+Route::get('/sitemap-products-{page}.xml',   [SitemapController::class, 'products'])  ->name('sitemap.products')
+    ->where('page', '[1-9][0-9]*');
+// robots.txt served via Laravel so Sitemap URL always matches current site_url config
+Route::get('/robots.txt',                    [SitemapController::class, 'robots'])    ->name('robots.txt');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
