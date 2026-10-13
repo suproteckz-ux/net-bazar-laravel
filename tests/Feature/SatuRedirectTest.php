@@ -156,11 +156,13 @@ class SatuRedirectTest extends TestCase
 
     public function test_satu_category_redirect_returns_404_when_kaspi_category_has_no_slug_yet(): void
     {
-        // Category exists but url_slug not yet generated — must NOT redirect to ?category= (would chain)
+        // Category exists but url_slug not yet generated — must NOT redirect to ?category= (would chain).
+        // Uses a generic test ID (not 8531101) to avoid conflict with the production migration
+        // that maps 8531101 → target '/catalog/kompyuternye-i-ofisnye-kresla'.
         $this->seedKaspiCategory('kaspi-chairs-01', 'Офисные кресла', null);
-        $this->seedCategoryRedirect(8531101, 'kaspi-chairs-01', null);
+        $this->seedCategoryRedirect(8531199, 'kaspi-chairs-01', null);
 
-        $this->get('/g8531101-ofisnye-kresla-almaty')->assertNotFound();
+        $this->get('/g8531199-ofisnye-kresla-almaty')->assertNotFound();
     }
 
     public function test_satu_category_redirect_resolves_to_slug_once_generated(): void
