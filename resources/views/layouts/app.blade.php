@@ -7,6 +7,7 @@
     @if(trim($__env->yieldContent('meta_description')))
         <meta name="description" content="@yield('meta_description')">
     @endif
+    @yield('meta_robots')
     <link rel="canonical" href="{{ rtrim(config('netbazar.contact.site_url'), '/') . request()->getPathInfo() }}">
 
     {{-- Fonts: Montserrat (display) + Manrope (text), Cyrillic subset --}}
