@@ -224,16 +224,19 @@ class KaspiEnrichmentController extends Controller
             $cleanAttrs[] = ['name' => $this->plain($a['name']), 'value' => $this->plain($a['value'])];
         }
 
-        $images = $payload['images'] ?? [];
-        if (!is_array($images) || count($images) > 100) {
-            throw new \InvalidArgumentException('Invalid images');
-        }
-        foreach ($images as $imgUrl) {
-            if (!is_string($imgUrl) || !$this->isValidImageUrl($imgUrl)) {
+        // Three cases: key absent → preserve, key=[] → preserve, key=[urls] → download locally
+        $rawImages = array_key_exists('images', $payload) ? ($payload['images'] ?? []) : null;
+        if ($rawImages !== null) {
+            if (!is_array($rawImages) || count($rawImages) > 100) {
                 throw new \InvalidArgumentException('Invalid images');
             }
+            foreach ($rawImages as $imgUrl) {
+                if (!is_string($imgUrl) || !$this->isValidImageUrl($imgUrl)) {
+                    throw new \InvalidArgumentException('Invalid images');
+                }
+            }
+            $rawImages = array_values(array_unique($rawImages));
         }
-        $images = array_values(array_unique($images)); // deduplicate preserving order
 
         $crumbs = $payload['breadcrumbs'] ?? [];
         $path   = $this->categoryPath($crumbs);
@@ -248,7 +251,10 @@ class KaspiEnrichmentController extends Controller
             $crumbs = [];
         }
 
-        $result = DB::transaction(function () use ($sku, $url, $payload, $cleanAttrs, $images, $path, $crumbs, $state) {
+        // Download images before opening the transaction — keep DB lock short
+        $localPhotos = (!empty($rawImages)) ? $this->downloadAndLocalise($sku, $rawImages) : null;
+
+        $result = DB::transaction(function () use ($sku, $url, $payload, $cleanAttrs, $localPhotos, $path, $crumbs, $state) {
             $lookupUrl = DB::table('kaspi_lookup')
                 ->where('sku', $sku)
                 ->where('status', 'resolved')
@@ -273,7 +279,6 @@ class KaspiEnrichmentController extends Controller
                 'url'                => $url,
                 'description'        => $this->plain($payload['description'] ?? ''),
                 'attributes_json'    => json_encode($cleanAttrs, JSON_UNESCAPED_UNICODE),
-                'photos_json'        => json_encode($images, JSON_UNESCAPED_UNICODE),
                 'category_path_json' => json_encode($path, JSON_UNESCAPED_UNICODE),
                 'breadcrumbs_json'   => json_encode($crumbs, JSON_UNESCAPED_UNICODE),
                 'status'             => $state,
@@ -282,10 +287,19 @@ class KaspiEnrichmentController extends Controller
                 'received_at'        => now(),
             ];
 
+            // photos_json updated only when non-empty images were provided and downloaded
+            if ($localPhotos !== null) {
+                $contentData['photos_json'] = json_encode($localPhotos, JSON_UNESCAPED_UNICODE);
+            }
+
             // Upsert without touching manual_description / manual_attributes_json / manual_photos_json
             if (DB::table('kaspi_content')->where('sku', $sku)->exists()) {
                 DB::table('kaspi_content')->where('sku', $sku)->update($contentData);
             } else {
+                // New rows need a default value for photos_json
+                if (!isset($contentData['photos_json'])) {
+                    $contentData['photos_json'] = '[]';
+                }
                 DB::table('kaspi_content')->insert(array_merge(['sku' => $sku], $contentData));
             }
 
@@ -438,6 +452,84 @@ class KaspiEnrichmentController extends Controller
             'sqlite'           => DB::statement($on ? 'PRAGMA foreign_keys=ON' : 'PRAGMA foreign_keys=OFF'),
             default            => null,
         };
+    }
+
+    // ─── Local image storage ─────────────────────────────────────────────────
+
+    private function downloadAndLocalise(string $sku, array $cdnUrls): array
+    {
+        $slug     = substr(sha1($sku), 0, 16);
+        $largeDir = storage_path("app/public/product-media/{$slug}/large");
+
+        if (!is_dir($largeDir) && !@mkdir($largeDir, 0755, true) && !is_dir($largeDir)) {
+            return [];
+        }
+
+        $localPaths = [];
+        foreach ($cdnUrls as $i => $url) {
+            $n       = $i + 1;
+            $outPath = "{$largeDir}/{$n}.webp";
+
+            if (!file_exists($outPath)) {
+                $raw = $this->downloadImage($url);
+                if ($raw === null || strlen($raw) > 10_000_000) {
+                    continue;
+                }
+                if (!$this->saveAsWebP($raw, $outPath, 1200, 85)) {
+                    continue;
+                }
+            }
+
+            $localPaths[] = "/storage/product-media/{$slug}/large/{$n}.webp";
+        }
+
+        return $localPaths;
+    }
+
+    private function downloadImage(string $url): ?string
+    {
+        try {
+            $response = \Illuminate\Support\Facades\Http::timeout(30)
+                ->withUserAgent('NetBazar-Pipeline/1.0')
+                ->withHeaders(['Accept' => 'image/*'])
+                ->get($url);
+
+            if (!$response->successful()) {
+                return null;
+            }
+            $body = $response->body();
+            return ($body !== '') ? $body : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function saveAsWebP(string $raw, string $outPath, int $maxDim, int $quality): bool
+    {
+        $img = @imagecreatefromstring($raw);
+        if ($img === false) {
+            return false;
+        }
+
+        $origW = imagesx($img);
+        $origH = imagesy($img);
+
+        if ($origW > $maxDim || $origH > $maxDim) {
+            $ratio  = min($maxDim / $origW, $maxDim / $origH);
+            $newW   = (int) round($origW * $ratio);
+            $newH   = (int) round($origH * $ratio);
+            $canvas = imagecreatetruecolor($newW, $newH);
+            imagealphablending($canvas, false);
+            imagesavealpha($canvas, true);
+            imagecopyresampled($canvas, $img, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
+            imagedestroy($img);
+            $img = $canvas;
+        }
+
+        $ok = @imagewebp($img, $outPath, $quality);
+        imagedestroy($img);
+
+        return $ok && file_exists($outPath) && filesize($outPath) > 0;
     }
 
     // plain() mirrors enrichment.plain(): strip HTML tags, normalize whitespace

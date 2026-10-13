@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class KaspiEnrichmentApiTest extends TestCase
@@ -403,6 +404,159 @@ class KaspiEnrichmentApiTest extends TestCase
         $this->assertNotContains('excl-cat-test-id-000001', $ids);
     }
 
+    // ─── Photo handling ──────────────────────────────────────────────────────
+
+    public function test_store_content_absent_images_key_preserves_existing_photos(): void
+    {
+        $this->seedProduct('SKU-001');
+        $this->seedLookup('SKU-001', 'https://kaspi.kz/shop/p/some-product-12345678/');
+
+        DB::table('kaspi_content')->insert([
+            'sku'                => 'SKU-001',
+            'url'                => 'https://kaspi.kz/shop/p/some-product-12345678/',
+            'description'        => 'Existing desc',
+            'attributes_json'    => '[]',
+            'photos_json'        => '["https://resources.cdn-kaspi.kz/img/existing.jpg"]',
+            'category_path_json' => '[]',
+            'breadcrumbs_json'   => '[]',
+            'status'             => 'pending_category',
+            'detail'             => '',
+            'source_sha256'      => '',
+            'received_at'        => now(),
+        ]);
+
+        // Payload without 'images' key at all
+        $payload = $this->validContentPayload('SKU-001', 'https://kaspi.kz/shop/p/some-product-12345678/');
+        unset($payload['images']);
+
+        $this->withHeader('Authorization', 'Bearer ' . $this->token)
+            ->postJson('/api/kaspi/content', $payload)
+            ->assertOk();
+
+        $row = DB::table('kaspi_content')->where('sku', 'SKU-001')->first();
+        $this->assertSame('["https://resources.cdn-kaspi.kz/img/existing.jpg"]', $row->photos_json);
+    }
+
+    public function test_store_content_empty_images_array_preserves_existing_photos(): void
+    {
+        $this->seedProduct('SKU-001');
+        $this->seedLookup('SKU-001', 'https://kaspi.kz/shop/p/some-product-12345678/');
+
+        DB::table('kaspi_content')->insert([
+            'sku'                => 'SKU-001',
+            'url'                => 'https://kaspi.kz/shop/p/some-product-12345678/',
+            'description'        => 'Existing desc',
+            'attributes_json'    => '[]',
+            'photos_json'        => '["https://resources.cdn-kaspi.kz/img/existing.jpg"]',
+            'category_path_json' => '[]',
+            'breadcrumbs_json'   => '[]',
+            'status'             => 'pending_category',
+            'detail'             => '',
+            'source_sha256'      => '',
+            'received_at'        => now(),
+        ]);
+
+        // Payload with images: []
+        $payload = $this->validContentPayload('SKU-001', 'https://kaspi.kz/shop/p/some-product-12345678/');
+        // images already [] in validContentPayload, but be explicit:
+        $payload['images'] = [];
+
+        $this->withHeader('Authorization', 'Bearer ' . $this->token)
+            ->postJson('/api/kaspi/content', $payload)
+            ->assertOk();
+
+        $row = DB::table('kaspi_content')->where('sku', 'SKU-001')->first();
+        $this->assertSame('["https://resources.cdn-kaspi.kz/img/existing.jpg"]', $row->photos_json);
+    }
+
+    public function test_store_content_with_cdn_images_stores_local_paths(): void
+    {
+        $this->seedProduct('SKU-001');
+        $this->seedLookup('SKU-001', 'https://kaspi.kz/shop/p/some-product-12345678/');
+
+        // Minimal 1×1 black JPEG synthesised via GD (no network)
+        $img  = imagecreatetruecolor(1, 1);
+        ob_start();
+        imagejpeg($img, null, 85);
+        $jpegRaw = ob_get_clean();
+        imagedestroy($img);
+
+        Http::fake([
+            'https://resources.cdn-kaspi.kz/*' => Http::response($jpegRaw, 200, [
+                'Content-Type' => 'image/jpeg',
+            ]),
+        ]);
+
+        $payload = $this->validContentPayload('SKU-001', 'https://kaspi.kz/shop/p/some-product-12345678/');
+        $payload['images'] = ['https://resources.cdn-kaspi.kz/img/product/photo1.jpg'];
+
+        $this->withHeader('Authorization', 'Bearer ' . $this->token)
+            ->postJson('/api/kaspi/content', $payload)
+            ->assertOk();
+
+        $row   = DB::table('kaspi_content')->where('sku', 'SKU-001')->first();
+        $paths = json_decode($row->photos_json, true);
+        $this->assertCount(1, $paths);
+        $this->assertStringStartsWith('/storage/product-media/', $paths[0]);
+        $this->assertStringEndsWith('1.webp', $paths[0]);
+    }
+
+    public function test_store_content_dedup_same_cdn_url_twice_reuses_file(): void
+    {
+        $this->seedProduct('SKU-001');
+        $this->seedLookup('SKU-001', 'https://kaspi.kz/shop/p/some-product-12345678/');
+
+        $img  = imagecreatetruecolor(1, 1);
+        ob_start();
+        imagejpeg($img, null, 85);
+        $jpegRaw = ob_get_clean();
+        imagedestroy($img);
+
+        Http::fake([
+            'https://resources.cdn-kaspi.kz/*' => Http::response($jpegRaw, 200, [
+                'Content-Type' => 'image/jpeg',
+            ]),
+        ]);
+
+        $url     = 'https://kaspi.kz/shop/p/some-product-12345678/';
+        $payload = array_merge(
+            $this->validContentPayload('SKU-001', $url),
+            ['images' => ['https://resources.cdn-kaspi.kz/img/product/photo1.jpg']]
+        );
+
+        // First push
+        $this->withHeader('Authorization', 'Bearer ' . $this->token)
+            ->postJson('/api/kaspi/content', $payload)
+            ->assertOk();
+        $row1  = DB::table('kaspi_content')->where('sku', 'SKU-001')->first();
+        $paths1 = json_decode($row1->photos_json, true);
+
+        // Second push — file already exists, should reuse without re-downloading
+        Http::fake([]); // no HTTP calls should happen
+        $this->withHeader('Authorization', 'Bearer ' . $this->token)
+            ->postJson('/api/kaspi/content', $payload)
+            ->assertOk();
+        $row2   = DB::table('kaspi_content')->where('sku', 'SKU-001')->first();
+        $paths2 = json_decode($row2->photos_json, true);
+
+        $this->assertSame($paths1, $paths2);
+    }
+
+    public function test_store_content_rejects_non_cdn_image_url(): void
+    {
+        $this->seedProduct('SKU-001');
+        $this->seedLookup('SKU-001', 'https://kaspi.kz/shop/p/some-product-12345678/');
+
+        $payload = array_merge(
+            $this->validContentPayload('SKU-001', 'https://kaspi.kz/shop/p/some-product-12345678/'),
+            ['images' => ['https://evil.example.com/img/ssrf.jpg']]
+        );
+
+        $this->withHeader('Authorization', 'Bearer ' . $this->token)
+            ->postJson('/api/kaspi/content', $payload)
+            ->assertStatus(422);
+    }
+
     public function test_widget_result_rejects_wrong_partner_id(): void
     {
         $this->seedProduct('SKU-001');
@@ -468,7 +622,7 @@ class KaspiEnrichmentApiTest extends TestCase
             'status'        => 'pending_category',
             'description'   => 'Test description',
             'attributes'    => [['name' => 'Color', 'value' => 'Red']],
-            'images'        => ['https://resources.cdn-kaspi.kz/img/product/photo.jpg'],
+            'images'        => [],
             'breadcrumbs'   => [],
             'category_path' => [],
             'detail'        => 'Full category path unavailable',
@@ -489,7 +643,7 @@ class KaspiEnrichmentApiTest extends TestCase
             'status'        => 'ready',
             'description'   => 'Test',
             'attributes'    => [],
-            'images'        => ['https://resources.cdn-kaspi.kz/img/test.jpg'],
+            'images'        => [],
             'breadcrumbs'   => $breadcrumbs,
             'category_path' => $category_path,
             'detail'        => '',
