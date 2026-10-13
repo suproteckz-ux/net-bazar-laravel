@@ -2,6 +2,15 @@
 
 return [
 
+    // ── Domain redirect ──────────────────────────────────────────────────────
+    // Hosts listed here are permanently 301-redirected to the canonical domain
+    // (config('netbazar.contact.site_url')). Only these explicit values are ever
+    // redirected; arbitrary Host headers are ignored (no open redirect).
+    // Override via env: NETBAZAR_TECH_DOMAINS=netbazar.kz,www.netbazar.kz
+    'tech_domains' => array_values(array_filter(
+        array_map('trim', explode(',', env('NETBAZAR_TECH_DOMAINS', 'netbazar.kz,www.netbazar.kz')))
+    )),
+
     // ── Contact data (single source of truth for header, footer, info pages) ─
     'contact' => [
         'phone'          => '+7 (778) 492-11-13',

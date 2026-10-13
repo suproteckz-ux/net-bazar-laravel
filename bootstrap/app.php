@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\KaspiApiAuth;
+use App\Http\Middleware\RedirectTechnicalDomain;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,6 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Must run before sessions and CSRF so redirected requests never get
+        // a session cookie on the technical domain.
+        $middleware->web(prepend: [RedirectTechnicalDomain::class]);
+
         $middleware->alias([
             'kaspi.auth' => KaspiApiAuth::class,
         ]);
