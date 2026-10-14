@@ -102,7 +102,7 @@
             @endif
 
             <div class="nb-pdp__actions">
-                @if($product->kaspi_confirmed_url)
+                @if($product->kaspi_confirmed_url && $isOrderable)
                     <a href="{{ $product->kaspi_confirmed_url }}?m={{ config('netbazar.kaspi_partner_id') }}"
                        class="nb-btn nb-btn--primary"
                        target="_blank" rel="noopener noreferrer">
@@ -118,7 +118,7 @@
                     @csrf
                     <input type="hidden" name="sku" value="{{ $product->sku }}">
                     <input type="hidden" name="qty" value="1">
-                    <button class="nb-btn nb-btn--secondary" type="submit">
+                    <button class="nb-btn nb-btn--secondary" type="submit" @disabled(!$isOrderable)>
                         В корзину
                     </button>
                 </form>
@@ -186,7 +186,7 @@
     <span class="nb-price" style="font-size: 20px; font-weight: 800;">
         {{ number_format((float)$product->price_kzt, 0, '.', ' ') }} <span class="nb-cur">₸</span>
     </span>
-    @if($product->kaspi_confirmed_url)
+    @if($product->kaspi_confirmed_url && $isOrderable)
         <a href="{{ $product->kaspi_confirmed_url }}?m={{ config('netbazar.kaspi_partner_id') }}"
            class="nb-btn nb-btn--primary"
            target="_blank" rel="noopener noreferrer">

@@ -54,6 +54,35 @@ class ProductPageTest extends TestCase
         ]);
     }
 
+    private function seedKaspiLookup(string $sku, string $url): void
+    {
+        DB::table('kaspi_lookup')->insertOrIgnore([
+            'sku'        => $sku,
+            'partner_id' => 'netbazar',
+            'city_id'    => '750000000',
+            'status'     => 'resolved',
+            'url'        => $url,
+            'detail'     => '',
+            'frame_url'  => '',
+        ]);
+    }
+
+    private function seedStockPp3(string $sku, string $state, int $quantity = 1): void
+    {
+        DB::table('stock_pp3')->insertOrIgnore([
+            'sku'              => $sku,
+            'export_sku'       => $sku,
+            'match_method'     => 'exact',
+            'raw_stock'        => $quantity,
+            'preorder_days'    => 0,
+            'source_available' => $quantity > 0 ? 1 : 0,
+            'quantity'         => $quantity,
+            'state'            => $state,
+            'present_export'   => $quantity > 0 ? 1 : 0,
+            'updated_at'       => now()->toISOString(),
+        ]);
+    }
+
     // ─── Tests ───────────────────────────────────────────────────────────────
 
     public function test_product_page_shows_kaspi_category_breadcrumb(): void
@@ -148,5 +177,73 @@ class ProductPageTest extends TestCase
         $resp->assertSee('Кулеры для воды');
         $resp->assertSee('Бытовая техника');
         $resp->assertDontSee('Встраиваемые духовки');
+    }
+
+    // ─── Kaspi button availability tests ─────────────────────────────────────
+
+    public function test_kaspi_button_hidden_when_out_of_stock(): void
+    {
+        // Reproduces the production bug: product shows "Нет в наличии" but
+        // Kaspi button was still visible because only kaspi_confirmed_url was checked.
+        $sku = 'OOS-KASPI-01';
+        $this->seedProduct($sku);
+        DB::table('products')->where('sku', $sku)->update(['available' => 0]);
+        $this->seedStockPp3($sku, 'out_of_stock', 0);
+        $this->seedKaspiLookup($sku, 'https://kaspi.kz/shop/p/test-oos');
+
+        $resp = $this->get(route('product.show', ['sku' => $sku]))->assertOk();
+
+        $resp->assertDontSee('Купить на Kaspi');
+        // "В корзину" button must be rendered but disabled
+        $resp->assertSee('В корзину');
+        $resp->assertSee('type="submit" disabled', false);
+    }
+
+    public function test_kaspi_button_shown_when_in_stock_with_url(): void
+    {
+        $sku = 'IN-STOCK-KASPI-01';
+        $this->seedProduct($sku);
+        $this->seedStockPp3($sku, 'in_stock', 5);
+        $this->seedKaspiLookup($sku, 'https://kaspi.kz/shop/p/test-in-stock');
+
+        $resp = $this->get(route('product.show', ['sku' => $sku]))->assertOk();
+
+        $resp->assertSee('Купить на Kaspi');
+        // "В корзину" button must be enabled (no disabled attribute)
+        $resp->assertSee('В корзину');
+        $resp->assertDontSee('type="submit" disabled', false);
+    }
+
+    public function test_kaspi_button_absent_when_no_url_even_if_in_stock(): void
+    {
+        $sku = 'NO-URL-KASPI-01';
+        $this->seedProduct($sku);
+        $this->seedStockPp3($sku, 'in_stock', 3);
+        // No kaspi_lookup row — no confirmed URL
+
+        $resp = $this->get(route('product.show', ['sku' => $sku]))->assertOk();
+
+        $resp->assertDontSee('Купить на Kaspi');
+        // Cart button still active (stock is positive)
+        $resp->assertDontSee('type="submit" disabled', false);
+    }
+
+    public function test_kaspi_button_returns_when_stock_becomes_positive(): void
+    {
+        $sku = 'RECOVER-KASPI-01';
+        $this->seedProduct($sku);
+        DB::table('products')->where('sku', $sku)->update(['available' => 0]);
+        $this->seedStockPp3($sku, 'out_of_stock', 0);
+        $this->seedKaspiLookup($sku, 'https://kaspi.kz/shop/p/test-recover');
+
+        // Initially out of stock — Kaspi button hidden
+        $this->get(route('product.show', ['sku' => $sku]))->assertDontSee('Купить на Kaspi');
+
+        // Stock recovers: available=1, stock state becomes in_stock
+        DB::table('products')->where('sku', $sku)->update(['available' => 1]);
+        DB::table('stock_pp3')->where('sku', $sku)->update(['state' => 'in_stock', 'quantity' => 2]);
+
+        // Kaspi button must reappear
+        $this->get(route('product.show', ['sku' => $sku]))->assertSee('Купить на Kaspi');
     }
 }

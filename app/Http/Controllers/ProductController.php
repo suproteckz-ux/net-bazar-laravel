@@ -83,7 +83,8 @@ class ProductController extends Controller
                 'kl.url as kaspi_confirmed_url',
                 's.state as stock_state',
                 's.quantity as stock_quantity',
-                's.preorder_days'
+                's.preorder_days',
+                'p.available'
             )
             ->first();
 
@@ -91,12 +92,16 @@ class ProductController extends Controller
             abort(404, "Товар с артикулом «{$sku}» не найден.");
         }
 
+        // Same orderable condition used by CartController::store() — single source of truth.
+        // present=1 AND (available=1 OR stock_pp3.state='preorder')
+        $isOrderable = (bool) ($product->present && ((bool) $product->available || $product->stock_state === 'preorder'));
+
         $photos      = $this->resolvePhotos($product);
         $attributes  = $this->parseAttributes($product->attributes_json ?? null);
         $stockLabel  = $this->stockLabel($product);
         $kaspiCrumbs = $this->resolveKaspiCrumbs($sku);
 
-        return view('product.show', compact('product', 'photos', 'attributes', 'stockLabel', 'kaspiCrumbs'));
+        return view('product.show', compact('product', 'photos', 'attributes', 'stockLabel', 'kaspiCrumbs', 'isOrderable'));
     }
 
     /**
