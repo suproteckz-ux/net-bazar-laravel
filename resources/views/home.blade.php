@@ -56,13 +56,22 @@
 </section>
 
 {{-- ════════════════════ MARKETING CATEGORY TILES ════════════════════════════ --}}
+@if($tiles->isNotEmpty())
 <nav class="nb-tiles" aria-label="Категории товаров">
     @foreach($tiles as $tile)
-        <a href="{{ route('catalog.index', ['category' => $tile['category_id']]) }}"
-           class="nb-tile" aria-label="{{ $tile['label'] }}">
-            <img class="nb-tile__art" src="{{ $tile['image'] }}" alt="{{ $tile['label'] }}" loading="lazy">
+        @php $tileUrl = $tile->resolveUrl(); @endphp
+        @if($tileUrl)
+        <a href="{{ $tileUrl }}"
+           class="nb-tile" aria-label="{{ e($tile->label) }}"
+           data-ga4-placement="home_tile">
+            @if($tile->imageUrl())
+                <img class="nb-tile__art"
+                     src="{{ $tile->imageUrl() }}"
+                     alt="{{ e($tile->image_alt ?: $tile->label) }}"
+                     loading="lazy">
+            @endif
             <div class="nb-tile__foot">
-                <span class="nb-tile__label">{{ $tile['label'] }}</span>
+                <span class="nb-tile__label">{{ $tile->label }}</span>
                 <span class="nb-tile__go" aria-hidden="true">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path d="M3 8h10M8 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -70,8 +79,10 @@
                 </span>
             </div>
         </a>
+        @endif
     @endforeach
 </nav>
+@endif
 
 {{-- ════════════════════════ BENEFITS STRIP ══════════════════════════════════ --}}
 <section class="nb-benefits" aria-label="Преимущества">
