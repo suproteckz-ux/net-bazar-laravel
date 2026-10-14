@@ -23,8 +23,8 @@ class ManualCategoryController extends Controller
         $q = substr(trim(request()->query('q', '')), 0, 200);
 
         $flatCategories  = $this->tree->getPublicCategories();
-        $categoryTree    = $this->tree->buildTree($flatCategories);
-        $activeBranchIds = [];
+        $categoryTree    = $this->tree->buildUnifiedTree();
+        $activeBranchIds = $this->tree->getUnifiedActivePath((string) $category->id, 'manual', $flatCategories);
         $selectedCategory = null;
         $categoryId = '';
 

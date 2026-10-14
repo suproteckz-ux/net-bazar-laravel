@@ -14,11 +14,13 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ManualCategoryResource extends Resource
@@ -72,6 +74,51 @@ class ManualCategoryResource extends Resource
                         ->numeric()
                         ->default(0)
                         ->helperText('Меньшее число — выше в списке'),
+                ])
+                ->columns(2),
+
+            Section::make('Расположение в каталоге')
+                ->description('Выберите не более одного родителя — Kaspi-категория ИЛИ ручная. Взаимно исключают друг друга.')
+                ->schema([
+                    Select::make('kaspi_parent_id')
+                        ->label('Родительская Kaspi-категория')
+                        ->options(fn () => DB::table('kaspi_categories')
+                            ->orderBy('path')
+                            ->pluck('path', 'id')
+                            ->toArray()
+                        )
+                        ->searchable()
+                        ->nullable()
+                        ->placeholder('— нет —')
+                        ->live()
+                        ->afterStateUpdated(fn ($state, callable $set) => $state ? $set('parent_id', null) : null)
+                        ->rules([
+                            fn (Get $get) => function (string $attr, $value, \Closure $fail) use ($get) {
+                                if ($value && $get('parent_id')) {
+                                    $fail('Нельзя одновременно задать Kaspi-родителя и ручного родителя.');
+                                }
+                            },
+                        ]),
+
+                    Select::make('parent_id')
+                        ->label('Родительская ручная категория')
+                        ->options(fn () => ManualCategory::where('is_active', true)
+                            ->orderBy('name')
+                            ->pluck('name', 'id')
+                            ->toArray()
+                        )
+                        ->searchable()
+                        ->nullable()
+                        ->placeholder('— нет —')
+                        ->live()
+                        ->afterStateUpdated(fn ($state, callable $set) => $state ? $set('kaspi_parent_id', null) : null)
+                        ->rules([
+                            fn (Get $get) => function (string $attr, $value, \Closure $fail) use ($get) {
+                                if ($value && $get('kaspi_parent_id')) {
+                                    $fail('Нельзя одновременно задать ручного родителя и Kaspi-родителя.');
+                                }
+                            },
+                        ]),
                 ])
                 ->columns(2),
 

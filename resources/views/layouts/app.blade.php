@@ -148,9 +148,7 @@
         @else
             @php
                 try {
-                    $drawerTree = app(\App\Services\CategoryTreeService::class);
-                    $drawerFlat = $drawerTree->getPublicCategories();
-                    $drawerNodes = $drawerTree->buildTree($drawerFlat);
+                    $drawerNodes = app(\App\Services\CategoryTreeService::class)->buildUnifiedTree();
                 } catch (\Throwable $e) {
                     $drawerNodes = [];
                 }

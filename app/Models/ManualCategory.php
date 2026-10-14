@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class ManualCategory extends Model
 {
     protected $fillable = [
-        'name', 'slug', 'parent_id', 'h1', 'description',
+        'name', 'slug', 'parent_id', 'kaspi_parent_id', 'h1', 'description',
         'seo_title', 'seo_description', 'image_path',
         'sort_order', 'is_active',
     ];
@@ -33,6 +33,11 @@ class ManualCategory extends Model
     public function parent(): BelongsTo
     {
         return $this->belongsTo(ManualCategory::class, 'parent_id');
+    }
+
+    public function kaspiParent(): BelongsTo
+    {
+        return $this->belongsTo(KaspiCategory::class, 'kaspi_parent_id');
     }
 
     public function children(): HasMany

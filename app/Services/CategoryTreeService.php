@@ -112,6 +112,143 @@ class CategoryTreeService
     }
 
     /**
+     * Build a unified tree merging kaspi categories and active manual categories.
+     *
+     * Node types:
+     *   kaspi  → node_key='kaspi:{id}',  url links to /catalog/{slug} or /catalog?category={id}
+     *   manual → node_key='manual:{id}', url links to /category/{slug}
+     *
+     * Manual categories are nested under their kaspi parent (if it's in the public tree),
+     * their manual parent, or shown at root level. Orphaned kaspi parents (not in public
+     * tree) cause the manual category to appear at root — stored kaspi_parent_id is preserved.
+     */
+    public function buildUnifiedTree(): array
+    {
+        $flatKaspi  = $this->getPublicCategories();
+        $flatManual = $this->getActiveManualCategories();
+
+        $kaspiIdSet = array_flip(array_column($flatKaspi, 'id'));
+        $unified    = [];
+
+        foreach ($flatKaspi as $cat) {
+            $sortOrder  = property_exists($cat, 'display_order') ? ($cat->display_order ?? 9999) : 9999;
+            $unified[]  = (object) [
+                'node_key'   => 'kaspi:' . $cat->id,
+                'id'         => $cat->id,
+                'parent_key' => $cat->parent_id !== null ? 'kaspi:' . $cat->parent_id : null,
+                'name'       => $cat->name,
+                'node_type'  => 'kaspi',
+                'url_slug'   => $cat->url_slug ?? null,
+                'sort_order' => $sortOrder,
+                'children'   => [],
+            ];
+        }
+
+        foreach ($flatManual as $cat) {
+            if ($cat->kaspi_parent_id !== null && isset($kaspiIdSet[$cat->kaspi_parent_id])) {
+                $parentKey = 'kaspi:' . $cat->kaspi_parent_id;
+            } elseif ($cat->parent_id !== null) {
+                $parentKey = 'manual:' . $cat->parent_id;
+            } else {
+                $parentKey = null;
+            }
+            $unified[] = (object) [
+                'node_key'   => 'manual:' . $cat->id,
+                'id'         => (string) $cat->id,
+                'parent_key' => $parentKey,
+                'name'       => $cat->name,
+                'node_type'  => 'manual',
+                'url_slug'   => $cat->slug,
+                'sort_order' => $cat->sort_order ?? 0,
+                'children'   => [],
+            ];
+        }
+
+        return $this->buildTreeFromNodes($unified, null);
+    }
+
+    /**
+     * Return unified active path as an array of node_keys (e.g. ['kaspi:abc', 'kaspi:xyz']).
+     * Used by controllers to highlight the active branch in the unified tree.
+     */
+    public function getUnifiedActivePath(string $nodeId, string $nodeType, array $flatKaspi): array
+    {
+        if ($nodeType === 'kaspi') {
+            return array_map(
+                fn ($id) => 'kaspi:' . $id,
+                $this->getActiveBranchIds($nodeId, $flatKaspi)
+            );
+        }
+
+        $path   = ['manual:' . $nodeId];
+        $manual = DB::table('manual_categories')->where('id', $nodeId)->first();
+
+        if ($manual === null) {
+            return $path;
+        }
+
+        if (!empty($manual->kaspi_parent_id)) {
+            foreach ($this->getActiveBranchIds($manual->kaspi_parent_id, $flatKaspi) as $id) {
+                $path[] = 'kaspi:' . $id;
+            }
+        } elseif (!empty($manual->parent_id)) {
+            $pid  = $manual->parent_id;
+            $seen = [];
+            while ($pid !== null && !isset($seen[$pid])) {
+                $seen[$pid] = true;
+                $path[]     = 'manual:' . $pid;
+                $pid        = DB::table('manual_categories')->where('id', $pid)->value('parent_id');
+            }
+        }
+
+        return $path;
+    }
+
+    private function buildTreeFromNodes(array $nodes, ?string $parentKey): array
+    {
+        $children = [];
+        foreach ($nodes as $node) {
+            if ($node->parent_key === $parentKey) {
+                $n           = clone $node;
+                $n->children = $this->buildTreeFromNodes($nodes, $node->node_key);
+                $children[]  = $n;
+            }
+        }
+        usort($children, function ($a, $b) {
+            $diff = $a->sort_order <=> $b->sort_order;
+            return $diff !== 0 ? $diff : strcmp($a->name, $b->name);
+        });
+        return $children;
+    }
+
+    private function getActiveManualCategories(): array
+    {
+        if (!Schema::hasTable('manual_categories')) {
+            return [];
+        }
+
+        $hasKaspiParent = Schema::hasColumn('manual_categories', 'kaspi_parent_id');
+        $select         = ['id', 'name', 'slug', 'parent_id', 'sort_order'];
+        if ($hasKaspiParent) {
+            $select[] = 'kaspi_parent_id';
+        }
+
+        return DB::table('manual_categories')
+            ->where('is_active', true)
+            ->select($select)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get()
+            ->map(static function ($cat) use ($hasKaspiParent) {
+                if (!$hasKaspiParent) {
+                    $cat->kaspi_parent_id = null;
+                }
+                return $cat;
+            })
+            ->all();
+    }
+
+    /**
      * Get all descendant category IDs (including the category itself).
      * Used to filter products by category + all subcategories.
      */
