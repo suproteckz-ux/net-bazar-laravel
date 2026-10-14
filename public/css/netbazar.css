@@ -902,3 +902,58 @@ a.nb-contact-main-card__value:hover { color: var(--nb-accent); }
   .nb-wa-header { padding: 0 12px; }
   .nb-contact-primary { grid-template-columns: 1fr; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* OOS (out-of-stock) notification dialog                                      */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+.nb-oos-dialog {
+  border: 1px solid var(--nb-line-card);
+  border-radius: var(--nb-r-lg, 14px);
+  background: var(--nb-surface);
+  color: var(--nb-text);
+  padding: 0;
+  max-width: 420px;
+  width: calc(100% - 32px);
+  box-shadow: 0 24px 64px rgba(0,0,0,.65);
+}
+.nb-oos-dialog::backdrop {
+  background: rgba(0,0,0,.72);
+  backdrop-filter: blur(2px);
+}
+.nb-oos-dialog__panel { padding: 28px 24px 24px; }
+.nb-oos-dialog__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.nb-oos-dialog__title {
+  font-family: var(--nb-font-display);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--nb-text);
+  margin: 0;
+}
+.nb-oos-dialog__text {
+  font-size: 14px;
+  color: var(--nb-text-3);
+  line-height: 1.65;
+  margin: 0 0 24px;
+}
+.nb-oos-dialog__wa-btn {
+  width: 100%;
+  justify-content: center;
+  height: 52px;
+  font-size: 15px;
+}
+
+/* Flash messages on product page (no-JS fallback) */
+.nb-pdp__flash {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: var(--nb-r-sm, 8px);
+  font-size: 14px;
+  font-weight: 600;
+}
+.nb-pdp__flash--error  { background: rgba(229,85,85,.1); color: #e55; }
+.nb-pdp__flash--success { background: rgba(88,192,122,.1); color: var(--nb-in-stock); }

@@ -75,4 +75,89 @@
     });
   });
 
+  /* ── OOS (out-of-stock) dialog ───────────────────────────────────── */
+  var oosDialog = document.getElementById('nb-oos-dialog');
+  var oosWaBtn  = document.getElementById('nb-oos-wa-btn');
+  var oosClose  = document.getElementById('nb-oos-close');
+  var waPhone   = (document.querySelector('meta[name="wa-phone"]') || {}).content || '';
+
+  function openOosDialog(productName, sku) {
+    var waText = 'Здравствуйте! Подскажите, когда появится в наличии '
+      + productName + ', артикул ' + sku + '?';
+    if (oosWaBtn) {
+      oosWaBtn.href = 'https://wa.me/' + waPhone + '?text=' + encodeURIComponent(waText);
+    }
+    if (oosDialog && oosDialog.showModal) {
+      oosDialog.showModal();
+    }
+  }
+
+  if (oosClose && oosDialog) {
+    oosClose.addEventListener('click', function () { oosDialog.close(); });
+  }
+
+  if (oosDialog) {
+    /* Escape key is handled natively by <dialog>; also close on backdrop click */
+    oosDialog.addEventListener('click', function (e) {
+      var panel = oosDialog.querySelector('.nb-oos-dialog__panel');
+      if (panel && !panel.contains(e.target)) { oosDialog.close(); }
+    });
+  }
+
+  /* ── AJAX cart forms ─────────────────────────────────────────────── */
+  /* Intercepts .nb-cart-form submits, POSTs with Accept: application/json,
+     shows OOS dialog on 409, gives inline success feedback on 200.
+     Falls back to regular form submit on network error.               */
+
+  function updateCartBadges(count) {
+    var badges = document.querySelectorAll('.nb-badge');
+    badges.forEach(function (b) { b.textContent = count; });
+  }
+
+  document.querySelectorAll('.nb-cart-form').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var btn         = form.querySelector('[type="submit"]');
+      var origText    = btn ? btn.textContent.trim() : '';
+      var productName = form.dataset.productName || form.querySelector('[name="sku"]').value;
+      var sku         = (form.querySelector('[name="sku"]') || {}).value || '';
+
+      fetch(form.action, {
+        method:  'POST',
+        headers: { 'Accept': 'application/json' },
+        body:    new FormData(form),
+      })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          return { status: res.status, data: data };
+        });
+      })
+      .then(function (result) {
+        if (result.data.ok) {
+          /* Success: brief button feedback */
+          if (btn) {
+            btn.textContent = 'Добавлено!';
+            btn.disabled = true;
+            setTimeout(function () {
+              btn.textContent = origText;
+              btn.disabled = false;
+            }, 2200);
+          }
+          updateCartBadges(result.data.cart_count || 0);
+        } else {
+          /* Error: show OOS dialog with correct WA link */
+          openOosDialog(
+            result.data.product_name || productName,
+            result.data.sku         || sku
+          );
+        }
+      })
+      .catch(function () {
+        /* Network / parse error: fall back to full-page form submit */
+        form.submit();
+      });
+    });
+  });
+
 })();

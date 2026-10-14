@@ -19,6 +19,9 @@ class CartController extends Controller
     {
         $sku = trim($request->input('sku', ''));
         if (empty($sku)) {
+            if ($request->wantsJson()) {
+                return response()->json(['ok' => false, 'message' => 'Товар не найден.'], 422);
+            }
             return back()->with('error', 'Товар не найден.');
         }
 
@@ -36,11 +39,21 @@ class CartController extends Controller
             ->exists();
 
         if (!$orderable) {
+            if ($request->wantsJson()) {
+                $productName = DB::table('products')->where('sku', $sku)->value('name') ?? $sku;
+                return response()->json([
+                    'ok'           => false,
+                    'type'         => 'out_of_stock',
+                    'message'      => 'Товар недоступен для заказа.',
+                    'product_name' => $productName,
+                    'sku'          => $sku,
+                ], 409);
+            }
             return back()->with('error', 'Товар недоступен для заказа.');
         }
 
-        $cart       = session('cart', []);
-        $qty        = max(1, (int) $request->input('qty', 1));
+        $cart = session('cart', []);
+        $qty  = max(1, (int) $request->input('qty', 1));
 
         if (isset($cart[$sku])) {
             $cart[$sku]['qty'] += $qty;
@@ -50,6 +63,10 @@ class CartController extends Controller
 
         session(['cart' => $cart]);
 
+        if ($request->wantsJson()) {
+            $cartCount = array_sum(array_column($cart, 'qty'));
+            return response()->json(['ok' => true, 'cart_count' => $cartCount]);
+        }
         return back()->with('success', 'Товар добавлен в корзину.');
     }
 

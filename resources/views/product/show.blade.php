@@ -92,6 +92,15 @@
                 $pdpWaText = 'Здравствуйте! Меня интересует товар: ' . $product->name . '. Ссылка: ' . config('netbazar.contact.site_url') . '/product/' . $pdpSlug;
                 $pdpWaUrl  = 'https://wa.me/' . config('netbazar.contact.whatsapp') . '?text=' . rawurlencode($pdpWaText);
             @endphp
+
+            {{-- Flash fallback for no-JS (AJAX path shows OOS dialog instead) --}}
+            @if(session('error'))
+                <p class="nb-pdp__flash nb-pdp__flash--error" role="alert">{{ session('error') }}</p>
+            @endif
+            @if(session('success'))
+                <p class="nb-pdp__flash nb-pdp__flash--success" role="status">{{ session('success') }}</p>
+            @endif
+
             <div class="nb-pdp__actions">
                 @if($product->kaspi_confirmed_url)
                     <a href="{{ $product->kaspi_confirmed_url }}?m={{ config('netbazar.kaspi_partner_id') }}"
@@ -103,7 +112,9 @@
                         </svg>
                     </a>
                 @endif
-                <form method="POST" action="{{ route('cart.items.store') }}" class="nb-cart-form">
+                <form method="POST" action="{{ route('cart.items.store') }}" class="nb-cart-form"
+                      data-product-name="{{ $product->name }}"
+                      data-sku="{{ $product->sku }}">
                     @csrf
                     <input type="hidden" name="sku" value="{{ $product->sku }}">
                     <input type="hidden" name="qty" value="1">

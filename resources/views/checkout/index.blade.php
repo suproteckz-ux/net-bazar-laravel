@@ -22,6 +22,11 @@
             <form method="POST" action="{{ route('checkout.store') }}" novalidate>
                 @csrf
 
+                @if(session('error'))
+                    <div class="nb-checkout__alert" role="alert" style="color: var(--nb-danger, #e55); margin-bottom: 20px;">
+                        {{ session('error') }}
+                    </div>
+                @endif
                 @if($errors->any())
                     <div style="color: var(--nb-danger, #e55); margin-bottom: 20px;">
                         <ul style="padding-left: 1.2em;">
