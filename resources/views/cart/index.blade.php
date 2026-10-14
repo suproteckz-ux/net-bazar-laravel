@@ -104,6 +104,22 @@
 
         </div>
 
+        @push('analytics')
+        <script>
+        if (typeof gtag === 'function') {
+          gtag('event', 'view_cart', {
+            value: {{ (float) $grandTotal }},
+            currency: 'KZT',
+            items: [
+              @foreach($products as $sku => $row)
+              { item_id: '{{ addslashes($sku) }}', item_name: '{{ addslashes($row->name) }}', price: {{ (float) $row->price_kzt }}, quantity: {{ $row->qty }} },
+              @endforeach
+            ],
+          });
+        }
+        </script>
+        @endpush
+
     @endif
 
 </div>

@@ -2,6 +2,11 @@
 (function () {
   'use strict';
 
+  /* ── GA4 helper — silent no-op if gtag not loaded ───────────────── */
+  function ga4push(name, params) {
+    if (typeof gtag === 'function') { gtag('event', name, params); }
+  }
+
   /* ── Drawer (mobile category tree) ───────────────────────────────── */
   var drawer = document.getElementById('nb-drawer');
 
@@ -64,14 +69,34 @@
     btn.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
+      ga4push('contact_whatsapp', {
+        placement: 'product_card',
+        item_id: this.dataset.ga4ItemId || undefined,
+      });
       window.open(this.dataset.wa, '_blank', 'noopener,noreferrer');
     });
     btn.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         e.stopPropagation();
+        ga4push('contact_whatsapp', {
+          placement: 'product_card',
+          item_id: this.dataset.ga4ItemId || undefined,
+        });
         window.open(this.dataset.wa, '_blank', 'noopener,noreferrer');
       }
+    });
+  });
+
+  /* ── WA anchor link tracking (header, footer, drawer, OOS dialog) ── */
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-ga4-placement]');
+    if (!el) { return; }
+    var href = el.getAttribute('href') || '';
+    if (href.indexOf('wa.me') === -1) { return; }
+    ga4push('contact_whatsapp', {
+      placement: el.dataset.ga4Placement,
+      item_id:   el.dataset.ga4ItemId || undefined,
     });
   });
 
@@ -86,6 +111,7 @@
       + productName + ', артикул ' + sku + '?';
     if (oosWaBtn) {
       oosWaBtn.href = 'https://wa.me/' + waPhone + '?text=' + encodeURIComponent(waText);
+      oosWaBtn.dataset.ga4ItemId = sku;
     }
     if (oosDialog && oosDialog.showModal) {
       oosDialog.showModal();
@@ -145,6 +171,13 @@
             }, 2200);
           }
           updateCartBadges(result.data.cart_count || 0);
+          if (result.data.ga4_item) {
+            ga4push('add_to_cart', {
+              currency: 'KZT',
+              value: (result.data.ga4_item.price || 0) * (result.data.ga4_item.quantity || 1),
+              items: [result.data.ga4_item],
+            });
+          }
         } else {
           /* Error: show OOS dialog with correct WA link */
           openOosDialog(

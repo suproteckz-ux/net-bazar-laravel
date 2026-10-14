@@ -51,4 +51,24 @@
     </div>
 
 </div>
+
+@if($firePurchase)
+@push('analytics')
+<script>
+if (typeof gtag === 'function') {
+  gtag('event', 'purchase', {
+    transaction_id: '{{ $order->order_number }}',
+    value: {{ (float) $order->total_kzt }},
+    currency: 'KZT',
+    items: [
+      @foreach($order->items as $item)
+      { item_id: '{{ addslashes($item->sku) }}', item_name: '{{ addslashes($item->name) }}', price: {{ (float) $item->price_kzt }}, quantity: {{ $item->qty }} },
+      @endforeach
+    ],
+  });
+}
+</script>
+@endpush
+@endif
+
 @endsection

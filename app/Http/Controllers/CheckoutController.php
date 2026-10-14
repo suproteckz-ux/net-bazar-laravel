@@ -103,6 +103,7 @@ class CheckoutController extends Controller
 
         // Cart cleared only after successful commit
         session()->forget('cart');
+        session(['ga4_purchase_order_id' => $order->id]);
 
         return redirect()->route('checkout.done', ['id' => $order->id]);
     }
@@ -110,6 +111,10 @@ class CheckoutController extends Controller
     public function done(int $id)
     {
         $order = Order::with('items')->findOrFail($id);
-        return view('checkout.done', compact('order'));
+        $firePurchase = session('ga4_purchase_order_id') === $id;
+        if ($firePurchase) {
+            session()->forget('ga4_purchase_order_id');
+        }
+        return view('checkout.done', compact('order', 'firePurchase'));
     }
 }

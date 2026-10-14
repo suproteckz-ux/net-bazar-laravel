@@ -109,4 +109,21 @@
     </div>
 
 </div>
+
+@push('analytics')
+<script>
+if (typeof gtag === 'function') {
+  gtag('event', 'begin_checkout', {
+    value: {{ (float) $subtotal }},
+    currency: 'KZT',
+    items: [
+      @foreach($products as $row)
+      { item_id: '{{ addslashes($row->sku) }}', item_name: '{{ addslashes($row->name) }}', price: {{ (float) $row->price_kzt }}, quantity: {{ $row->qty }} },
+      @endforeach
+    ],
+  });
+}
+</script>
+@endpush
+
 @endsection

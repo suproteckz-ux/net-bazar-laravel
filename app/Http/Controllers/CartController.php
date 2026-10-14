@@ -65,7 +65,16 @@ class CartController extends Controller
 
         if ($request->wantsJson()) {
             $cartCount = array_sum(array_column($cart, 'qty'));
-            return response()->json(['ok' => true, 'cart_count' => $cartCount]);
+            $p = DB::table('products')->where('sku', $sku)->select('name', 'brand', 'price_kzt')->first();
+            $ga4Item = $p ? [
+                'item_id'    => $sku,
+                'item_name'  => $p->name,
+                'item_brand' => $p->brand,
+                'price'      => (float) $p->price_kzt,
+                'quantity'   => $qty,
+                'currency'   => 'KZT',
+            ] : ['item_id' => $sku, 'quantity' => $qty];
+            return response()->json(['ok' => true, 'cart_count' => $cartCount, 'ga4_item' => $ga4Item]);
         }
         return back()->with('success', 'Товар добавлен в корзину.');
     }

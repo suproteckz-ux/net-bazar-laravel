@@ -192,4 +192,15 @@
         </section>
     </div>
 </div>
+
+@if($q)
+@push('analytics')
+<script>
+if (typeof gtag === 'function') {
+  gtag('event', 'search', { search_term: '{{ addslashes($q) }}' });
+}
+</script>
+@endpush
+@endif
+
 @endsection
