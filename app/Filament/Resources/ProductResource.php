@@ -7,6 +7,7 @@ use App\Models\Product;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\TextInput;
@@ -129,6 +130,22 @@ class ProductResource extends Resource
                             ->helperText('Пример: ["https://cdn.example.com/photo1.jpg"]. Если заполнено — используется вместо фото из Kaspi. Не перезаписывается при импорте.')
                             ->rows(4)
                             ->maxLength(10000),
+                    ])
+                    ->columns(1),
+
+                Section::make('Ручные категории')
+                    ->description('Не перезаписываются при импорте из MarketRadar.')
+                    ->schema([
+                        Select::make('manualCategories')
+                            ->label('Категории')
+                            ->relationship(
+                                name: 'manualCategories',
+                                titleAttribute: 'name',
+                            )
+                            ->multiple()
+                            ->searchable()
+                            ->preload()
+                            ->helperText('Товар может быть в нескольких ручных категориях одновременно. Kaspi-категория не затрагивается.'),
                     ])
                     ->columns(1),
             ]);

@@ -7,6 +7,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\InfoController;
+use App\Http\Controllers\ManualCategoryController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SatuRedirectController;
 
@@ -22,10 +23,11 @@ Route::get('/g{satuId}-{rest}', [SatuRedirectController::class, 'category'])
     ->name('satu.category');
 
 // Sitemaps (cached 24 h, no Redis required)
-Route::get('/sitemap.xml',                   [SitemapController::class, 'index'])     ->name('sitemap.index');
-Route::get('/sitemap-pages.xml',             [SitemapController::class, 'pages'])     ->name('sitemap.pages');
-Route::get('/sitemap-categories.xml',        [SitemapController::class, 'categories'])->name('sitemap.categories');
-Route::get('/sitemap-products-{page}.xml',   [SitemapController::class, 'products'])  ->name('sitemap.products')
+Route::get('/sitemap.xml',                        [SitemapController::class, 'index'])            ->name('sitemap.index');
+Route::get('/sitemap-pages.xml',                  [SitemapController::class, 'pages'])            ->name('sitemap.pages');
+Route::get('/sitemap-categories.xml',             [SitemapController::class, 'categories'])       ->name('sitemap.categories');
+Route::get('/sitemap-manual-categories.xml',      [SitemapController::class, 'manualCategories']) ->name('sitemap.manual-categories');
+Route::get('/sitemap-products-{page}.xml',        [SitemapController::class, 'products'])         ->name('sitemap.products')
     ->where('page', '[1-9][0-9]*');
 // robots.txt served via Laravel so Sitemap URL always matches current site_url config
 Route::get('/robots.txt',                    [SitemapController::class, 'robots'])    ->name('robots.txt');
@@ -35,6 +37,9 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 // Catalog
 Route::get('/catalog', [CatalogController::class, 'index'])->name('catalog.index');
 Route::get('/catalog/{slug}', [CatalogController::class, 'show'])->name('catalog.show');
+
+// Manual categories (editorial, separate from Kaspi)
+Route::get('/category/{slug}', [ManualCategoryController::class, 'show'])->name('manual-category.show');
 
 // Product — {sku} allows spaces, Cyrillic, hyphens (anything except /)
 Route::get('/product/{sku}', [ProductController::class, 'show'])

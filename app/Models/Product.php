@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Product extends Model
 {
@@ -27,4 +28,14 @@ class Product extends Model
         'available' => 'boolean',
         'quantity'  => 'integer',
     ];
+
+    public function manualCategories(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            ManualCategory::class,
+            'product_manual_categories',
+            'sku',
+            'manual_category_id'
+        )->withPivot('sort_order');
+    }
 }

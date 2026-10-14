@@ -266,7 +266,7 @@ class CatalogController extends Controller
     }
 
     // ─── Sort: in-stock+photo first, then in-stock, then photo-only, then no stock/photo ─
-    private static function sortSql(): string
+    public static function sortSql(): string
     {
         $hasPhoto = "(
             (kc.manual_photos_json IS NOT NULL AND kc.manual_photos_json NOT IN ('', '[]', 'null'))

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ManualCategory;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +34,7 @@ class SitemapController extends Controller
             $sitemaps = [
                 $base . '/sitemap-pages.xml',
                 $base . '/sitemap-categories.xml',
+                $base . '/sitemap-manual-categories.xml',
             ];
             for ($i = 1; $i <= $chunks; $i++) {
                 $sitemaps[] = $base . '/sitemap-products-' . $i . '.xml';
@@ -88,6 +90,28 @@ class SitemapController extends Controller
                 ->all();
 
             $urls = array_map(fn($s) => ['loc' => $base . '/catalog/' . $s], $slugs);
+            return $this->renderUrlset($urls);
+        });
+
+        return $this->xmlResponse($xml);
+    }
+
+    /** GET /sitemap-manual-categories.xml — Editorial manual category pages */
+    public function manualCategories(): Response
+    {
+        $xml = Cache::remember($this->cacheKey('manual-categories'), self::CACHE_TTL, function () {
+            $base = $this->base();
+
+            $rows = ManualCategory::where('is_active', true)
+                ->orderBy('slug')
+                ->select(['slug', 'updated_at'])
+                ->get();
+
+            $urls = $rows->map(fn ($cat) => [
+                'loc'     => $base . '/category/' . $cat->slug,
+                'lastmod' => $this->toDate($cat->updated_at ? $cat->updated_at->toDateTimeString() : null),
+            ])->all();
+
             return $this->renderUrlset($urls);
         });
 
