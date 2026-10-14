@@ -43,6 +43,10 @@ return [
     // Feed URL for netbazar:catalog-import (the hourly MarketRadar Kaspi XML)
     'market_radar_feed_url' => env('MARKET_RADAR_FEED_URL', ''),
 
+    // Minimum offer count baseline for catalog-import feed validation.
+    // Overridable in tests via Config::set('netbazar.catalog_baseline_offers', N).
+    'catalog_baseline_offers' => (int) env('CATALOG_IMPORT_BASELINE', 3069),
+
     // ── Home page category tiles ─────────────────────────────────────────────
     // category_id values are kaspi_categories.id from the live DB.
     // label and image are editorial (not from DB).

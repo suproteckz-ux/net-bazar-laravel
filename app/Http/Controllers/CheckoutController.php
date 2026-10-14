@@ -44,6 +44,37 @@ class CheckoutController extends Controller
 
         $subtotal = array_sum(array_column($products, 'line_total'));
 
+        // Server-side re-validation: check every cart item is still orderable.
+        // Matches the CartController gate: present=1 AND (available=1 OR preorder).
+        $cartSkus       = array_keys($products);
+        $availableSkus  = DB::table('products as p')
+            ->leftJoin('stock_pp3 as s', 's.sku', '=', 'p.sku')
+            ->whereIn('p.sku', $cartSkus)
+            ->where('p.present', 1)
+            ->where(function ($q) {
+                $q->where('p.available', 1)
+                  ->orWhere('s.state', 'preorder');
+            })
+            ->pluck('p.sku')
+            ->flip()
+            ->all();
+
+        $unavailableNames = [];
+        foreach ($products as $sku => $row) {
+            if (!isset($availableSkus[$sku])) {
+                $unavailableNames[] = $row->name;
+            }
+        }
+
+        if (!empty($unavailableNames)) {
+            return back()->with(
+                'error',
+                'Следующие товары недоступны для заказа: '
+                    . implode(', ', $unavailableNames)
+                    . '. Пожалуйста, обновите корзину.'
+            );
+        }
+
         $order = DB::transaction(function () use ($validated, $products, $subtotal) {
             $order = Order::create([
                 'status'        => 'new',

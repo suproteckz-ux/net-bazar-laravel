@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
  *  - Upserts stock_pp3 (full row)
  *  - Rejects feeds shorter than 90% of the historical maximum
  *  - Never deletes products; existing editorial/manual columns are not touched
+ *  - Marks SKUs absent from the feed as out_of_stock (two-phase present_export flag)
  *  - Logs every run (success or error) to catalog_sync_runs
  */
 class CatalogImport extends Command
@@ -25,10 +26,9 @@ class CatalogImport extends Command
 
     protected $description = 'Download and apply the hourly MarketRadar Kaspi catalog XML feed';
 
-    private const MERCHANT_ID     = 'Avtoximiya';
-    private const MAX_BYTES       = 20 * 1024 * 1024; // 20 MB
-    private const BASELINE_OFFERS = 3069;
-    private const CHUNK_SIZE      = 500;
+    private const MERCHANT_ID = 'Avtoximiya';
+    private const MAX_BYTES   = 20 * 1024 * 1024; // 20 MB
+    private const CHUNK_SIZE  = 500;
 
     public function handle(): int
     {
@@ -66,8 +66,10 @@ class CatalogImport extends Command
         $count = count($offers);
         $this->line("Feed parsed: {$count} offers");
 
-        // Step 3: Count validation
-        $previousMax = (int) max(self::BASELINE_OFFERS, DB::table('catalog_sync_runs')->max('offer_count') ?? 0);
+        // Step 3: Count validation — reject feeds that are suspiciously short.
+        // Uses config baseline so tests can override it without touching code.
+        $baseline    = (int) config('netbazar.catalog_baseline_offers', 3069);
+        $previousMax = (int) max($baseline, DB::table('catalog_sync_runs')->max('offer_count') ?? 0);
         $minimum     = (int) ceil($previousMax * 0.9);
 
         if ($count < $minimum) {
@@ -82,11 +84,17 @@ class CatalogImport extends Command
             return 0;
         }
 
-        // Step 4: Apply
+        // Step 4: Apply atomically
         $sha256 = hash('sha256', $raw);
         try {
-            [$updated, $inserted] = $this->applyFeed($offers, $sha256);
-            $this->info("Import complete: {$count} offers processed ({$inserted} new, {$updated} updated)");
+            [$updated, $inserted, $stats] = $this->applyFeed($offers, $sha256);
+            $this->info(
+                "Import complete: {$count} offers"
+                . " ({$inserted} new, {$updated} updated"
+                . ", {$stats['zeroed_count']} zeroed"
+                . ", {$stats['restored_count']} restored"
+                . ", {$stats['absent_count']} absent)"
+            );
             return 0;
         } catch (\Throwable $e) {
             $msg = 'Import failed: ' . $e->getMessage();
@@ -162,7 +170,7 @@ class CatalogImport extends Command
 
         $dom = new \DOMDocument();
         libxml_use_internal_errors(true);
-        $loaded = $dom->loadXML($raw, LIBXML_NONET);
+        $loaded    = $dom->loadXML($raw, LIBXML_NONET);
         $xmlErrors = libxml_get_errors();
         libxml_clear_errors();
 
@@ -171,31 +179,25 @@ class CatalogImport extends Command
             throw new \RuntimeException("XML parse error: {$msg}");
         }
 
-        $root   = $dom->documentElement;
-        $nsUri  = $root->namespaceURI ?? '';
-        $nsUri  = $nsUri ?: 'kaspiShopping'; // default if root has no explicit namespace
+        $root  = $dom->documentElement;
+        $nsUri = $root->namespaceURI ?? '';
+        $nsUri = $nsUri ?: 'kaspiShopping';
 
         if ($root->localName !== 'kaspi_catalog') {
             throw new \RuntimeException("Expected root <kaspi_catalog>, got <{$root->localName}>");
         }
 
-        // Read merchantid
         $merchantNodes = $dom->getElementsByTagNameNS($nsUri, 'merchantid');
         $merchantId    = $merchantNodes->length > 0 ? trim($merchantNodes->item(0)->textContent) : '';
-
-        // Fallback: try without namespace
         if (!$merchantId) {
             $merchantId = trim($dom->getElementsByTagName('merchantid')->item(0)?->textContent ?? '');
         }
-
         if ($merchantId !== self::MERCHANT_ID) {
             throw new \RuntimeException("Merchant ID mismatch: expected '" . self::MERCHANT_ID . "', got '{$merchantId}'");
         }
 
-        // Read offers
         $offerNodes = $dom->getElementsByTagNameNS($nsUri, 'offer');
         if ($offerNodes->length === 0) {
-            // Fallback: without namespace
             $offerNodes = $dom->getElementsByTagName('offer');
         }
         if ($offerNodes->length === 0) {
@@ -233,7 +235,6 @@ class CatalogImport extends Command
             }
             $price = number_format((float) $priceStr, 2, '.', '');
 
-            // PP3 warehouse availability
             $availNodes = $el->getElementsByTagNameNS($nsUri, 'availability');
             if ($availNodes->length === 0) {
                 $availNodes = $el->getElementsByTagName('availability');
@@ -242,14 +243,12 @@ class CatalogImport extends Command
             $rawStock    = 0;
             $preOrder    = 0;
             $srcAvailable = 0;
-            $pp3Found    = false;
 
             foreach ($availNodes as $avail) {
                 /** @var \DOMElement $avail */
                 if ($avail->getAttribute('storeId') !== 'PP3') {
                     continue;
                 }
-                $pp3Found     = true;
                 $rawStock     = (int) $avail->getAttribute('stockCount');
                 $preOrder     = (int) $avail->getAttribute('preOrder');
                 $srcAvailable = $avail->getAttribute('available') === 'yes' ? 1 : 0;
@@ -281,20 +280,42 @@ class CatalogImport extends Command
     }
 
     /**
-     * Upsert products + stock_pp3 in a single transaction. Returns [updated, inserted].
+     * Atomically upsert products + stock_pp3 for feed SKUs, then zero-out absent SKUs.
+     *
+     * Three-phase design:
+     *   Phase 1 — Reset present_export = 0 for ALL stock_pp3 rows (marks everyone as absent).
+     *   Phase 2 — Upsert feed SKUs (sets present_export = 1, restoring their active status).
+     *   Phase 3 — Rows still at present_export = 0 were NOT in this feed:
+     *              mark them out_of_stock and clear products.available/quantity.
+     *
+     * All phases run in one transaction. Rollback on any failure leaves the DB unchanged.
+     *
+     * @return array{0: int, 1: int, 2: array{feed_count: int, absent_count: int,
+     *                                         zeroed_count: int, restored_count: int}}
      */
     private function applyFeed(array $offers, string $sha256): array
     {
         $now      = now()->toDateTimeString();
         $updated  = 0;
         $inserted = 0;
+        $stats    = [];
 
-        DB::transaction(function () use ($offers, $sha256, $now, &$updated, &$inserted) {
-            // Determine which SKUs already exist
-            $existingSkus = DB::table('products')
-                ->pluck('sku')
-                ->flip()
-                ->all();
+        DB::transaction(function () use ($offers, $sha256, $now, &$updated, &$inserted, &$stats) {
+
+            // ── Snapshot: SKUs that were previously absent AND are back in this feed ──
+            // Computed before Phase 1 resets present_export, so the reading is accurate.
+            $restoredCount = DB::table('stock_pp3')
+                ->where('present_export', 0)
+                ->whereIn('sku', array_keys($offers))
+                ->count();
+
+            // ── Phase 1: Mark all stock_pp3 rows as absent ────────────────────────
+            // Phase 2 upserts will set present_export = 1 for SKUs in the feed.
+            // Anything remaining at 0 after Phase 2 was not in this feed.
+            DB::table('stock_pp3')->update(['present_export' => 0]);
+
+            // ── Phase 2: Upsert feed SKUs ─────────────────────────────────────────
+            $existingSkus = DB::table('products')->pluck('sku')->flip()->all();
 
             $productRows = [];
             $stockRows   = [];
@@ -311,7 +332,7 @@ class CatalogImport extends Command
                     'price_kzt'            => $o['price'],
                     'quantity'             => $o['quantity'],
                     'available'            => (int) ($o['state'] === 'in_stock'),
-                    // These columns only matter for new inserts; updates ignore them via upsert $update list
+                    // Columns below only matter for new inserts; update list excludes them
                     'source_category_id'   => '__export_no_category__',
                     'source_category_path' => '',
                     'source_description'   => '',
@@ -334,7 +355,6 @@ class CatalogImport extends Command
                 ];
             }
 
-            // Products upsert: on duplicate only update commercial + status fields
             foreach (array_chunk($productRows, self::CHUNK_SIZE) as $chunk) {
                 DB::table('products')->upsert(
                     $chunk,
@@ -343,7 +363,6 @@ class CatalogImport extends Command
                 );
             }
 
-            // stock_pp3 upsert (products must exist first — runs after products upsert above)
             foreach (array_chunk($stockRows, self::CHUNK_SIZE) as $chunk) {
                 DB::table('stock_pp3')->upsert(
                     $chunk,
@@ -353,22 +372,73 @@ class CatalogImport extends Command
                 );
             }
 
-            // Log successful run
+            // ── Phase 3: Zero out SKUs absent from this feed ──────────────────────
+            // present_export = 0 after Phase 2 means the SKU was NOT in this feed.
+
+            $absentCount = DB::table('stock_pp3')->where('present_export', 0)->count();
+
+            $zeroedCount = DB::table('stock_pp3')
+                ->where('present_export', 0)
+                ->where('state', '!=', 'out_of_stock')
+                ->count();
+
+            if ($zeroedCount > 0) {
+                DB::table('stock_pp3')
+                    ->where('present_export', 0)
+                    ->where('state', '!=', 'out_of_stock')
+                    ->update([
+                        'state'            => 'out_of_stock',
+                        'quantity'         => 0,
+                        'raw_stock'        => 0,
+                        'source_available' => 0,
+                        'updated_at'       => $now,
+                    ]);
+
+                // Sync products.available / quantity for the newly zeroed SKUs.
+                // Uses a subquery for SQLite + MySQL compatibility (no JOIN-UPDATE).
+                $absentSkusSub = DB::table('stock_pp3')
+                    ->where('present_export', 0)
+                    ->select('sku');
+
+                DB::table('products')
+                    ->whereIn('sku', $absentSkusSub)
+                    ->where(function ($q) {
+                        $q->where('available', 1)->orWhere('quantity', '>', 0);
+                    })
+                    ->update([
+                        'available'        => 0,
+                        'quantity'         => 0,
+                        'last_imported_at' => $now,
+                    ]);
+            }
+
+            $stats = [
+                'feed_count'     => count($offers),
+                'absent_count'   => $absentCount,
+                'zeroed_count'   => $zeroedCount,
+                'restored_count' => $restoredCount,
+            ];
+
+            // ── Log run ──────────────────────────────────────────────────────────
             DB::table('catalog_sync_runs')->insert([
                 'time'        => $now,
                 'sha256'      => $sha256,
                 'offer_count' => count($offers),
                 'report_json' => json_encode([
-                    'result'   => 'success',
-                    'updated'  => $updated,
-                    'inserted' => $inserted,
-                    'time'     => $now,
-                    'mode'     => 'import',
+                    'result'          => 'success',
+                    'updated'         => $updated,
+                    'inserted'        => $inserted,
+                    'feed_count'      => count($offers),
+                    'absent_count'    => $absentCount,
+                    'zeroed_count'    => $zeroedCount,
+                    'restored_count'  => $restoredCount,
+                    'time'            => $now,
+                    'mode'            => 'import',
                 ], JSON_UNESCAPED_UNICODE),
             ]);
         });
 
-        return [$updated, $inserted];
+        return [$updated, $inserted, $stats];
     }
 
     private function logRun(string $result, int $offerCount, string $detail = '', string $sha256 = ''): void

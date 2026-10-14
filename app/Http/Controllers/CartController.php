@@ -22,9 +22,21 @@ class CartController extends Controller
             return back()->with('error', 'Товар не найден.');
         }
 
-        $exists = DB::table('products')->where('sku', $sku)->where('present', 1)->exists();
-        if (!$exists) {
-            return back()->with('error', 'Товар не найден в каталоге.');
+        // Require present=1 AND (available=1 OR explicit preorder from stock_pp3).
+        // products.available is kept in sync by CatalogImport: 1 = in_stock, 0 = absent/zeroed.
+        // Products without a stock_pp3 row (manually added) pass if available=1.
+        $orderable = DB::table('products as p')
+            ->leftJoin('stock_pp3 as s', 's.sku', '=', 'p.sku')
+            ->where('p.sku', $sku)
+            ->where('p.present', 1)
+            ->where(function ($q) {
+                $q->where('p.available', 1)
+                  ->orWhere('s.state', 'preorder');
+            })
+            ->exists();
+
+        if (!$orderable) {
+            return back()->with('error', 'Товар недоступен для заказа.');
         }
 
         $cart       = session('cart', []);

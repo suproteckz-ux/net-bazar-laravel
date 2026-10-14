@@ -165,4 +165,107 @@ class CheckoutTest extends TestCase
         $response->assertSee($order->order_number);
         $response->assertSee('Покупатель');
     }
+
+    // ── P0 stock gate tests ────────────────────────────────────────────────────
+
+    public function test_checkout_blocked_when_product_goes_out_of_stock(): void
+    {
+        // Seed product as available, put it in the cart, then zero it (simulates
+        // an import run that archives the SKU while it sits in the customer's cart).
+        $sku = 'CHECKOUT-OOS-SKU';
+        DB::table('source_categories')->insertOrIgnore([
+            'id' => 'checkout-cat-001', 'name' => 'Checkout Category',
+            'path' => 'Checkout Category', 'present' => 1,
+        ]);
+        DB::table('products')->insert([
+            'sku'                  => $sku,
+            'source_offer_id'      => 'offer-oos-checkout',
+            'name'                 => 'Архивный в корзине',
+            'brand'                => 'TestBrand',
+            'price_kzt'            => '9990.00',
+            'quantity'             => 5,
+            'available'            => 1,
+            'source_category_id'   => 'checkout-cat-001',
+            'source_category_path' => 'Checkout Category',
+            'source_description'   => '',
+            'source_photos_json'   => '[]',
+            'present'              => 1,
+        ]);
+        DB::table('stock_pp3')->insert([
+            'sku'            => $sku,
+            'export_sku'     => $sku,
+            'match_method'   => 'exact',
+            'raw_stock'      => 5,
+            'preorder_days'  => 0,
+            'source_available' => 1,
+            'quantity'       => 5,
+            'state'          => 'in_stock',
+            'present_export' => 1,
+            'updated_at'     => now()->toISOString(),
+        ]);
+
+        // Simulate import zeroing the SKU between cart add and checkout submit
+        DB::table('products')->where('sku', $sku)
+            ->update(['available' => 0, 'quantity' => 0]);
+        DB::table('stock_pp3')->where('sku', $sku)
+            ->update(['state' => 'out_of_stock', 'quantity' => 0, 'raw_stock' => 0,
+                      'source_available' => 0, 'present_export' => 0]);
+
+        $response = $this->withSession(['cart' => [$sku => ['sku' => $sku, 'qty' => 1]]])
+            ->post(route('checkout.store'), [
+                'customer_name' => 'Тест Клиент',
+                'phone'         => '+77770000001',
+                'city'          => 'Алматы',
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error');
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_checkout_proceeds_with_preorder_product(): void
+    {
+        $sku = 'CHECKOUT-PREORDER-SKU';
+        DB::table('source_categories')->insertOrIgnore([
+            'id' => 'checkout-cat-001', 'name' => 'Checkout Category',
+            'path' => 'Checkout Category', 'present' => 1,
+        ]);
+        DB::table('products')->insert([
+            'sku'                  => $sku,
+            'source_offer_id'      => 'offer-preorder-checkout',
+            'name'                 => 'Предзаказ в корзине',
+            'brand'                => 'TestBrand',
+            'price_kzt'            => '18000.00',
+            'quantity'             => 0,
+            'available'            => 0,
+            'source_category_id'   => 'checkout-cat-001',
+            'source_category_path' => 'Checkout Category',
+            'source_description'   => '',
+            'source_photos_json'   => '[]',
+            'present'              => 1,
+        ]);
+        DB::table('stock_pp3')->insert([
+            'sku'            => $sku,
+            'export_sku'     => $sku,
+            'match_method'   => 'exact',
+            'raw_stock'      => 0,
+            'preorder_days'  => 14,
+            'source_available' => 1,
+            'quantity'       => 0,
+            'state'          => 'preorder',
+            'present_export' => 1,
+            'updated_at'     => now()->toISOString(),
+        ]);
+
+        $response = $this->withSession(['cart' => [$sku => ['sku' => $sku, 'qty' => 1]]])
+            ->post(route('checkout.store'), [
+                'customer_name' => 'Предзаказчик',
+                'phone'         => '+77770000002',
+                'city'          => 'Алматы',
+            ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseCount('orders', 1);
+        $this->assertDatabaseHas('order_items', ['sku' => $sku]);
+    }
 }

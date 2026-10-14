@@ -131,4 +131,88 @@ class CartTest extends TestCase
         $cartCount = array_sum(array_column($cart, 'qty'));
         $this->assertEquals(5, $cartCount);
     }
+
+    // ── P0 stock gate tests ────────────────────────────────────────────────────
+
+    public function test_cannot_add_out_of_stock_product_to_cart(): void
+    {
+        $sku = 'TEST-OOS-SKU';
+        DB::table('source_categories')->insertOrIgnore([
+            'id' => 'test-cat-001', 'name' => 'Test Category',
+            'path' => 'Test Category', 'present' => 1,
+        ]);
+        DB::table('products')->insertOrIgnore([
+            'sku'                  => $sku,
+            'source_offer_id'      => 'offer-oos',
+            'name'                 => 'Архивный товар',
+            'brand'                => 'TestBrand',
+            'price_kzt'            => '9990.00',
+            'quantity'             => 0,
+            'available'            => 0,
+            'source_category_id'   => 'test-cat-001',
+            'source_category_path' => 'Test Category',
+            'source_description'   => '',
+            'source_photos_json'   => '[]',
+            'present'              => 1,
+        ]);
+        DB::table('stock_pp3')->insertOrIgnore([
+            'sku'            => $sku,
+            'export_sku'     => $sku,
+            'match_method'   => 'exact',
+            'raw_stock'      => 0,
+            'preorder_days'  => 0,
+            'source_available' => 0,
+            'quantity'       => 0,
+            'state'          => 'out_of_stock',
+            'present_export' => 0,
+            'updated_at'     => now()->toISOString(),
+        ]);
+
+        $response = $this->post(route('cart.items.store'), ['sku' => $sku, 'qty' => 1]);
+
+        $response->assertRedirect();
+        $this->assertEmpty(session('cart', []));
+        $response->assertSessionHas('error');
+    }
+
+    public function test_can_add_preorder_product_to_cart(): void
+    {
+        $sku = 'TEST-PREORDER-SKU';
+        DB::table('source_categories')->insertOrIgnore([
+            'id' => 'test-cat-001', 'name' => 'Test Category',
+            'path' => 'Test Category', 'present' => 1,
+        ]);
+        DB::table('products')->insertOrIgnore([
+            'sku'                  => $sku,
+            'source_offer_id'      => 'offer-preorder',
+            'name'                 => 'Предзаказ товар',
+            'brand'                => 'TestBrand',
+            'price_kzt'            => '15000.00',
+            'quantity'             => 0,
+            'available'            => 0,
+            'source_category_id'   => 'test-cat-001',
+            'source_category_path' => 'Test Category',
+            'source_description'   => '',
+            'source_photos_json'   => '[]',
+            'present'              => 1,
+        ]);
+        DB::table('stock_pp3')->insertOrIgnore([
+            'sku'            => $sku,
+            'export_sku'     => $sku,
+            'match_method'   => 'exact',
+            'raw_stock'      => 0,
+            'preorder_days'  => 21,
+            'source_available' => 1,
+            'quantity'       => 0,
+            'state'          => 'preorder',
+            'present_export' => 1,
+            'updated_at'     => now()->toISOString(),
+        ]);
+
+        $response = $this->post(route('cart.items.store'), ['sku' => $sku, 'qty' => 1]);
+
+        $response->assertRedirect();
+        $this->assertArrayHasKey($sku, session('cart', []));
+        $this->assertEquals(1, session('cart')[$sku]['qty']);
+    }
 }
