@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\ManualCategoryResource\Pages\EditManualCategory;
 use App\Models\ManualCategory;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -205,6 +208,145 @@ class ManualCategoryFilamentTest extends TestCase
             ->value('path');
 
         $this->assertNull($missing, 'Missing kaspi_category_id must resolve to null');
+    }
+
+    // ─── 11. Edit page with many products assigned returns 200 ───────────────────
+    // Regression for production scenario: category with 30 products assigned.
+    // Verifies the form renders and initialOptionLabels are embedded without PHP exception.
+
+    public function test_edit_page_with_many_products_returns_200(): void
+    {
+        DB::table('kaspi_categories')->insertOrIgnore([
+            'id'        => 'kcat-stress-01',
+            'parent_id' => null,
+            'name'      => 'Мебель',
+            'path'      => 'Мебель',
+            'source_id' => 'kcat-stress-01',
+        ]);
+        DB::table('source_categories')->insertOrIgnore([
+            'id' => 'sc-stress', 'name' => 'Stress', 'path' => 'Stress', 'present' => 1,
+        ]);
+
+        $category = ManualCategory::create([
+            'name'            => 'Кресла стресс',
+            'slug'            => 'kresla-stress',
+            'is_active'       => true,
+            'sort_order'      => 0,
+            'kaspi_parent_id' => 'kcat-stress-01',
+        ]);
+
+        for ($i = 1; $i <= 30; $i++) {
+            DB::table('products')->insertOrIgnore([
+                'sku'                  => "STRESS-{$i}",
+                'source_offer_id'      => "STRESS-{$i}",
+                'name'                 => "Product Stress {$i}",
+                'brand'                => 'Brand',
+                'price_kzt'            => '1000.00',
+                'quantity'             => 1,
+                'available'            => 1,
+                'source_category_id'   => 'sc-stress',
+                'source_category_path' => 'Stress',
+                'source_description'   => '',
+                'source_photos_json'   => '[]',
+                'present'              => 1,
+                'last_imported_at'     => now(),
+            ]);
+            DB::table('product_manual_categories')->insertOrIgnore([
+                'sku'                => "STRESS-{$i}",
+                'manual_category_id' => $category->id,
+                'sort_order'         => 0,
+            ]);
+        }
+
+        $this->actingAs($this->adminUser())
+            ->get('/admin/manual-categories/' . $category->id . '/edit')
+            ->assertStatus(200)
+            ->assertSee('Product Stress 1');
+    }
+
+    // ─── 12. callSchemaComponentMethod: kaspi getOptionLabel AJAX works ───────────
+    // Simulates the JS call: $wire.callSchemaComponentMethod('form.kaspi_parent_id', 'getOptionLabel')
+    // This is the AJAX request fired when initialOptionLabel doesn't match state.
+
+    public function test_callschema_kaspi_parent_id_get_option_label(): void
+    {
+        $this->actingAs($this->adminUser());
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        DB::table('kaspi_categories')->insertOrIgnore([
+            'id'        => 'kcat-ajax-01',
+            'parent_id' => null,
+            'name'      => 'Кресла ajax',
+            'path'      => 'Мебель / Кресла ajax',
+            'source_id' => 'kcat-ajax-01',
+        ]);
+
+        $category = ManualCategory::create([
+            'name'            => 'Кресла callschema',
+            'slug'            => 'kresla-callschema',
+            'is_active'       => true,
+            'sort_order'      => 0,
+            'kaspi_parent_id' => 'kcat-ajax-01',
+        ]);
+
+        $component = Livewire::test(EditManualCategory::class, ['record' => $category->getKey()]);
+        $component->assertOk();
+
+        // getOptionLabel is called by JS when the select needs to refresh its displayed label.
+        // The key 'form.kaspi_parent_id' is the absolute schema component key.
+        $component->call('callSchemaComponentMethod', 'form.kaspi_parent_id', 'getOptionLabel');
+        $component->assertHasNoErrors();
+    }
+
+    // ─── 13. callSchemaComponentMethod: products getOptionLabelsForJs with 30 items ─
+    // Simulates the JS AJAX call that fires when initialOptionLabels state comparison fails.
+    // Production scenario: 30 products assigned, JS decides to re-fetch all labels.
+
+    public function test_callschema_products_get_option_labels_for_js_many_products(): void
+    {
+        $this->actingAs($this->adminUser());
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        DB::table('source_categories')->insertOrIgnore([
+            'id' => 'sc-lw', 'name' => 'LW', 'path' => 'LW', 'present' => 1,
+        ]);
+
+        $category = ManualCategory::create([
+            'name'       => 'Кресла labels',
+            'slug'       => 'kresla-labels',
+            'is_active'  => true,
+            'sort_order' => 0,
+        ]);
+
+        for ($i = 1; $i <= 30; $i++) {
+            DB::table('products')->insertOrIgnore([
+                'sku'                  => "LW-{$i}",
+                'source_offer_id'      => "LW-{$i}",
+                'name'                 => "LW Product {$i}",
+                'brand'                => 'Brand',
+                'price_kzt'            => '1000.00',
+                'quantity'             => 1,
+                'available'            => 1,
+                'source_category_id'   => 'sc-lw',
+                'source_category_path' => 'LW',
+                'source_description'   => '',
+                'source_photos_json'   => '[]',
+                'present'              => 1,
+                'last_imported_at'     => now(),
+            ]);
+            DB::table('product_manual_categories')->insertOrIgnore([
+                'sku'                => "LW-{$i}",
+                'manual_category_id' => $category->id,
+                'sort_order'         => 0,
+            ]);
+        }
+
+        $component = Livewire::test(EditManualCategory::class, ['record' => $category->getKey()]);
+        $component->assertOk();
+
+        // getOptionLabelsForJs is called by JS for multiple-select when labels don't match state.
+        $component->call('callSchemaComponentMethod', 'form.products', 'getOptionLabelsForJs');
+        $component->assertHasNoErrors();
     }
 
     // ─── 10. getSearchResultsUsing filters by path substring ──────────────────
