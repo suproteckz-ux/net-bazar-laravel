@@ -22,7 +22,7 @@ class CatalogController extends Controller
 
         // Load sidebar tree (same query as Python's public_categories)
         $flatCategories  = $this->tree->getPublicCategories();
-        $categoryTree    = $this->tree->buildTree($flatCategories);
+        $categoryTree    = $this->tree->buildUnifiedTree();
         $selectedCategory = null;
         $activeBranchIds = [];
 
@@ -52,7 +52,7 @@ class CatalogController extends Controller
                 abort(404, 'Категория не найдена');
             }
 
-            $activeBranchIds = $this->tree->getActiveBranchIds($categoryId, $flatCategories);
+            $activeBranchIds = $this->tree->getUnifiedActivePath($categoryId, 'kaspi', $flatCategories);
         }
 
         $query = DB::table('products as p')
@@ -117,6 +117,29 @@ class CatalogController extends Controller
             return $this->showKaspiCategory($kaspiCat);
         }
 
+        // ── Step 1.5: Old-slug redirect ───────────────────────────────────────
+        // When a kaspi category gets a new slug (rename / fix), an entry in
+        // kaspi_category_slug_redirects maps the old slug to the category ID.
+        // We look up the current url_slug and 301 with all query params preserved.
+        $oldSlugRow = DB::table('kaspi_category_slug_redirects')
+            ->where('old_slug', $slug)
+            ->first();
+
+        if ($oldSlugRow !== null && $oldSlugRow->kaspi_category_id !== null) {
+            $newSlug = DB::table('kaspi_categories')
+                ->where('id', $oldSlugRow->kaspi_category_id)
+                ->value('url_slug');
+
+            if ($newSlug !== null) {
+                $dest = route('catalog.show', ['slug' => $newSlug]);
+                $qs   = request()->getQueryString();
+                if ($qs) {
+                    $dest .= '?' . $qs;
+                }
+                return redirect($dest, 301);
+            }
+        }
+
         // ── Step 2: Marketing shortcut pages ─────────────────────────────────
         $categoryName = self::SLUG_NAMES[$slug] ?? null;
         if ($categoryName === null) {
@@ -124,7 +147,7 @@ class CatalogController extends Controller
         }
 
         $flatCategories  = $this->tree->getPublicCategories();
-        $categoryTree    = $this->tree->buildTree($flatCategories);
+        $categoryTree    = $this->tree->buildUnifiedTree();
         $activeBranchIds = [];
         $selectedCategory = null;
         $categoryId       = '';
@@ -165,7 +188,7 @@ class CatalogController extends Controller
         $q = substr(trim(request()->query('q', '')), 0, 200);
 
         $flatCategories  = $this->tree->getPublicCategories();
-        $categoryTree    = $this->tree->buildTree($flatCategories);
+        $categoryTree    = $this->tree->buildUnifiedTree();
         $categoryId      = $kaspiCat->id;
         $selectedCategory = $this->tree->findById($categoryId, $flatCategories);
 
@@ -181,7 +204,7 @@ class CatalogController extends Controller
             ];
         }
 
-        $activeBranchIds = $this->tree->getActiveBranchIds($categoryId, $flatCategories);
+        $activeBranchIds = $this->tree->getUnifiedActivePath($categoryId, 'kaspi', $flatCategories);
 
         // Ancestor chain for breadcrumbs — loaded directly from kaspi_categories so
         // it works even when the category is absent from the public tree (no ready products).

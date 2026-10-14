@@ -8,7 +8,7 @@ class HomeController extends Controller
 {
     public function index()
     {
-        $tiles = HomeTile::with('manualCategory')
+        $tiles = HomeTile::with(['manualCategory', 'kaspiCategory'])
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->orderBy('id')

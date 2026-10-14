@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 class HomeTile extends Model
 {
@@ -29,11 +30,16 @@ class HomeTile extends Model
         return $this->belongsTo(ManualCategory::class);
     }
 
+    public function kaspiCategory(): BelongsTo
+    {
+        return $this->belongsTo(KaspiCategory::class, 'kaspi_category_id');
+    }
+
     public function resolveUrl(): ?string
     {
         return match ($this->link_type) {
             'kaspi_category'  => $this->kaspi_category_id
-                ? '/catalog?category=' . rawurlencode($this->kaspi_category_id)
+                ? $this->resolveKaspiCategoryUrl()
                 : null,
             'manual_category' => $this->manualCategory?->is_active
                 ? '/category/' . $this->manualCategory->slug
@@ -41,6 +47,22 @@ class HomeTile extends Model
             'custom_url'      => $this->safeCustomUrl(),
             default           => null,
         };
+    }
+
+    private function resolveKaspiCategoryUrl(): string
+    {
+        // Prefer the eager-loaded relationship to avoid an extra query.
+        if ($this->relationLoaded('kaspiCategory')) {
+            $slug = $this->kaspiCategory?->url_slug;
+        } else {
+            $slug = DB::table('kaspi_categories')
+                ->where('id', $this->kaspi_category_id)
+                ->value('url_slug');
+        }
+
+        return $slug
+            ? '/catalog/' . rawurlencode($slug)
+            : '/catalog?category=' . rawurlencode($this->kaspi_category_id);
     }
 
     public function imageUrl(): string
