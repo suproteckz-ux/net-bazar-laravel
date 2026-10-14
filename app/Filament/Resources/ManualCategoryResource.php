@@ -5,6 +5,9 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ManualCategoryResource\Pages;
 use App\Models\ManualCategory;
 use App\Models\Product;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
@@ -159,8 +162,8 @@ class ManualCategoryResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('products_count')
                     ->label('Товаров')
-                    ->counts('products')
-                    ->sortable(),
+                    ->getStateUsing(fn (ManualCategory $record) => $record->products()->count())
+                    ->sortable(false),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label('Изменена')
                     ->dateTime('d.m.Y H:i')
@@ -175,7 +178,7 @@ class ManualCategoryResource extends Resource
             ])
             ->actions([
                 EditAction::make(),
-                Tables\Actions\Action::make('view_storefront')
+                Action::make('view_storefront')
                     ->label('Открыть на сайте')
                     ->icon('heroicon-o-arrow-top-right-on-square')
                     ->color('gray')
@@ -184,8 +187,8 @@ class ManualCategoryResource extends Resource
                     ->visible(fn (ManualCategory $record) => $record->is_active),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
