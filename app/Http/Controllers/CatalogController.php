@@ -60,7 +60,7 @@ class CatalogController extends Controller
             ->where('p.present', 1)
             ->select(
                 'p.sku', 'p.url_slug', 'p.name', 'p.brand', 'p.price_kzt',
-                'p.source_photos_json',
+                'p.source_photos_json', 'p.editorial_photos_json',
                 'kc.photos_json as kaspi_photos_json',
                 'kc.manual_photos_json'
             );
@@ -143,7 +143,7 @@ class CatalogController extends Controller
             })
             ->select(
                 'p.sku', 'p.url_slug', 'p.name', 'p.brand', 'p.price_kzt',
-                'p.source_photos_json',
+                'p.source_photos_json', 'p.editorial_photos_json',
                 'kc.photos_json as kaspi_photos_json',
                 'kc.manual_photos_json'
             )
@@ -192,7 +192,7 @@ class CatalogController extends Controller
             ->where('p.present', 1)
             ->select(
                 'p.sku', 'p.url_slug', 'p.name', 'p.brand', 'p.price_kzt',
-                'p.source_photos_json',
+                'p.source_photos_json', 'p.editorial_photos_json',
                 'kc.photos_json as kaspi_photos_json',
                 'kc.manual_photos_json'
             );
@@ -254,11 +254,12 @@ class CatalogController extends Controller
 
     public static function firstPhoto(object $product): ?string
     {
-        foreach (['manual_photos_json', 'kaspi_photos_json', 'source_photos_json'] as $field) {
+        foreach (['editorial_photos_json', 'manual_photos_json', 'kaspi_photos_json', 'source_photos_json'] as $field) {
             if (!empty($product->$field) && $product->$field !== '[]') {
                 $arr = json_decode($product->$field, true);
                 if (!empty($arr[0])) {
-                    return $arr[0];
+                    $p = $arr[0];
+                    return (str_starts_with($p, 'http') || str_starts_with($p, '/')) ? $p : '/storage/' . $p;
                 }
             }
         }
@@ -269,7 +270,8 @@ class CatalogController extends Controller
     public static function sortSql(): string
     {
         $hasPhoto = "(
-            (kc.manual_photos_json IS NOT NULL AND kc.manual_photos_json NOT IN ('', '[]', 'null'))
+            (p.editorial_photos_json IS NOT NULL AND p.editorial_photos_json NOT IN ('', '[]', 'null'))
+            OR (kc.manual_photos_json IS NOT NULL AND kc.manual_photos_json NOT IN ('', '[]', 'null'))
             OR (kc.photos_json IS NOT NULL AND kc.photos_json NOT IN ('', '[]', 'null'))
             OR (p.source_photos_json IS NOT NULL AND p.source_photos_json NOT IN ('', '[]', 'null'))
         )";

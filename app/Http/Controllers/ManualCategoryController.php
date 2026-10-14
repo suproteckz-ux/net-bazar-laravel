@@ -35,7 +35,7 @@ class ManualCategoryController extends Controller
             ->where('p.present', 1)
             ->select(
                 'p.sku', 'p.url_slug', 'p.name', 'p.brand', 'p.price_kzt',
-                'p.source_photos_json',
+                'p.source_photos_json', 'p.editorial_photos_json',
                 'kc.photos_json as kaspi_photos_json',
                 'kc.manual_photos_json'
             );

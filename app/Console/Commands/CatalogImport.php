@@ -309,18 +309,37 @@ class CatalogImport extends Command
                 ->whereIn('sku', array_keys($offers))
                 ->count();
 
-            // ── Phase 1: Mark all stock_pp3 rows as absent ────────────────────────
-            // Phase 2 upserts will set present_export = 1 for SKUs in the feed.
-            // Anything remaining at 0 after Phase 2 was not in this feed.
-            DB::table('stock_pp3')->update(['present_export' => 0]);
+            // ── Phase 1: Mark feed-managed stock_pp3 rows as absent ──────────────
+            // Only resets rows whose product is source='feed' and not exclude_from_feed_sync.
+            // Manual and protected products' present_export is intentionally left untouched.
+            DB::table('stock_pp3')
+                ->whereIn('sku', function ($q) {
+                    $q->select('sku')->from('products')
+                      ->where('source', 'feed')
+                      ->where('exclude_from_feed_sync', 0);
+                })
+                ->update(['present_export' => 0]);
 
             // ── Phase 2: Upsert feed SKUs ─────────────────────────────────────────
+            // Protected products (source='manual' or exclude_from_feed_sync=1) are skipped
+            // entirely — neither their product row nor their stock_pp3 row is touched.
             $existingSkus = DB::table('products')->pluck('sku')->flip()->all();
+
+            $protectedSkus = DB::table('products')
+                ->where(function ($q) {
+                    $q->where('source', 'manual')->orWhere('exclude_from_feed_sync', 1);
+                })
+                ->pluck('sku')
+                ->flip()
+                ->all();
 
             $productRows = [];
             $stockRows   = [];
 
             foreach ($offers as $sku => $o) {
+                if (isset($protectedSkus[$sku])) {
+                    continue;
+                }
                 $isNew = !isset($existingSkus[$sku]);
                 $isNew ? $inserted++ : $updated++;
 
@@ -383,9 +402,16 @@ class CatalogImport extends Command
                 ->count();
 
             if ($zeroedCount > 0) {
+                // Phase 3: Zero out absent SKUs, excluding protected/manual products.
                 DB::table('stock_pp3')
                     ->where('present_export', 0)
                     ->where('state', '!=', 'out_of_stock')
+                    ->whereNotIn('sku', function ($q) {
+                        $q->select('sku')->from('products')
+                          ->where(function ($q2) {
+                              $q2->where('source', 'manual')->orWhere('exclude_from_feed_sync', 1);
+                          });
+                    })
                     ->update([
                         'state'            => 'out_of_stock',
                         'quantity'         => 0,
@@ -396,8 +422,15 @@ class CatalogImport extends Command
 
                 // Sync products.available / quantity for the newly zeroed SKUs.
                 // Uses a subquery for SQLite + MySQL compatibility (no JOIN-UPDATE).
+                // Excludes protected/manual products from zeroing.
                 $absentSkusSub = DB::table('stock_pp3')
                     ->where('present_export', 0)
+                    ->whereNotIn('sku', function ($q) {
+                        $q->select('sku')->from('products')
+                          ->where(function ($q2) {
+                              $q2->where('source', 'manual')->orWhere('exclude_from_feed_sync', 1);
+                          });
+                    })
                     ->select('sku');
 
                 DB::table('products')

@@ -72,7 +72,8 @@ class ProductController extends Controller
             ->where('p.sku', $sku)
             ->select(
                 'p.sku', 'p.url_slug', 'p.name', 'p.brand', 'p.price_kzt', 'p.present',
-                'p.source_photos_json', 'p.source_category_id',
+                'p.source_photos_json', 'p.editorial_photos_json', 'p.source_category_id',
+                'p.editorial_description',
                 'sc.name as category_name', 'sc.path as category_path',
                 'kc.photos_json as kaspi_photos_json',
                 'kc.manual_photos_json',
@@ -144,11 +145,14 @@ class ProductController extends Controller
 
     private function resolvePhotos(object $product): array
     {
-        foreach (['manual_photos_json', 'kaspi_photos_json', 'source_photos_json'] as $field) {
+        foreach (['editorial_photos_json', 'manual_photos_json', 'kaspi_photos_json', 'source_photos_json'] as $field) {
             if (!empty($product->$field) && $product->$field !== '[]') {
                 $arr = json_decode($product->$field, true);
                 if (!empty($arr)) {
-                    return array_values($arr);
+                    return array_values(array_map(
+                        fn ($p) => (str_starts_with($p, 'http') || str_starts_with($p, '/')) ? $p : '/storage/' . $p,
+                        $arr
+                    ));
                 }
             }
         }
