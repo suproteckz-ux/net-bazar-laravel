@@ -349,6 +349,82 @@ class ManualCategoryFilamentTest extends TestCase
         $component->assertHasNoErrors();
     }
 
+    // ─── 14. callSchemaComponentMethod: FileUpload getUploadedFiles on init ─────
+    // Simulates the AUTOMATIC Livewire AJAX that FilePond fires on every page load
+    // via: FilePond.create({ files: await getFiles() }) → getUploadedFiles() → AJAX.
+    // This is the ONLY automatic livewire/update request on the ManualCategory edit page.
+    // In production (APP_DEBUG=false) a TypeError inside this call → abort(419).
+
+    public function test_callschema_image_path_get_uploaded_files_null(): void
+    {
+        $this->actingAs($this->adminUser());
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $category = ManualCategory::create([
+            'name'       => 'Без изображения',
+            'slug'       => 'bez-izobrazheniya',
+            'is_active'  => true,
+            'sort_order' => 0,
+            'image_path' => null,
+        ]);
+
+        $component = Livewire::test(EditManualCategory::class, ['record' => $category->getKey()]);
+        $component->assertOk();
+
+        $component->call('callSchemaComponentMethod', 'form.image_path', 'getUploadedFiles');
+        $component->assertHasNoErrors();
+    }
+
+    public function test_callschema_image_path_get_uploaded_files_with_path(): void
+    {
+        $this->actingAs($this->adminUser());
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $category = ManualCategory::create([
+            'name'       => 'С изображением',
+            'slug'       => 's-izobrazheniem',
+            'is_active'  => true,
+            'sort_order' => 0,
+            'image_path' => 'manual-categories/test-image.jpg',
+        ]);
+
+        $component = Livewire::test(EditManualCategory::class, ['record' => $category->getKey()]);
+        $component->assertOk();
+
+        // getUploadedFiles fires automatically on FilePond init — this is the
+        // request that returns 419 in production (TypeError → abort(419) when APP_DEBUG=false).
+        $component->call('callSchemaComponentMethod', 'form.image_path', 'getUploadedFiles');
+        $component->assertHasNoErrors();
+    }
+
+    // ─── 15. saveUploadedFiles runs before dehydration on getUploadedFiles AJAX ─
+    // Verifies that beforeStateDehydrated (saveUploadedFiles) doesn't throw TypeError.
+
+    public function test_callschema_image_path_get_uploaded_files_roundtrip(): void
+    {
+        $this->actingAs($this->adminUser());
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $category = ManualCategory::create([
+            'name'       => 'Кресло roundtrip',
+            'slug'       => 'kreslo-roundtrip',
+            'is_active'  => true,
+            'sort_order' => 0,
+            'image_path' => 'manual-categories/chair.jpg',
+        ]);
+
+        $component = Livewire::test(EditManualCategory::class, ['record' => $category->getKey()]);
+        $component->assertOk();
+
+        // First call — same as FilePond init AJAX
+        $component->call('callSchemaComponentMethod', 'form.image_path', 'getUploadedFiles');
+        $component->assertHasNoErrors();
+
+        // Second call — same AJAX again (simulates re-init after Livewire update)
+        $component->call('callSchemaComponentMethod', 'form.image_path', 'getUploadedFiles');
+        $component->assertHasNoErrors();
+    }
+
     // ─── 10. getSearchResultsUsing filters by path substring ──────────────────
 
     public function test_kaspi_category_search_filters_by_path(): void

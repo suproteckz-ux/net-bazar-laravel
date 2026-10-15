@@ -27,8 +27,8 @@ class RedirectTechnicalDomain
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // getHost() reads HTTP_HOST directly; X-Forwarded-Host is not trusted
-        // unless TrustProxies is configured (it is not for this app).
+        // getHost() reads HTTP_HOST directly. X-Forwarded-Host is trusted only
+        // if TrustProxies is active (it is — see bootstrap/app.php).
         $host = $request->getHost();
 
         $techHosts = config('netbazar.tech_domains', ['netbazar.kz', 'www.netbazar.kz']);

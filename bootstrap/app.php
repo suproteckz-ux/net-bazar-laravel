@@ -15,6 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Trust Plesk/Nginx reverse-proxy headers so isSecure(), ip(), and URL
+        // generation are correct when SSL terminates at the proxy layer.
+        $middleware->trustProxies(at: '*');
+
         // Must run before sessions and CSRF so redirected requests never get
         // a session cookie on the technical domain.
         $middleware->web(prepend: [RedirectTechnicalDomain::class]);
