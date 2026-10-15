@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Livewire\DiagnosticHandleRequests;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Mechanisms\HandleRequests\HandleRequests as LivewireHandleRequests;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -11,6 +13,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // TEMPORARY DIAGNOSTIC — replace Livewire's HandleRequests with a subclass
+        // that logs the TypeError Livewire silently converts to HTTP 419 in production.
+        // Remove once the root cause is identified (see DiagnosticHandleRequests.php).
+        $this->app->instance(LivewireHandleRequests::class, new DiagnosticHandleRequests());
+
         // Share total cart quantity (sum of all item qtys) with every view
         View::composer('*', function ($view) {
             $cart      = session('cart', []);
