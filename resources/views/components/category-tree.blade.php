@@ -33,13 +33,15 @@
         <li>
             @if($hasChildren)
                 {{-- Parent: link navigates, button toggles children --}}
-                <div class="nb-tree__row{{ $isActive ? ' is-active' : '' }}">
+                <div class="nb-tree__row{{ $isActive ? ' is-active' : ($isOpen ? ' is-branch' : '') }}">
                     <a class="nb-tree__link" href="{{ $href }}">{{ $node->name }}</a>
                     <button class="nb-tree__toggler"
                             aria-expanded="{{ $isOpen ? 'true' : 'false' }}"
                             aria-controls="nbt-{{ $safeKey }}"
                             aria-label="{{ $node->name }}">
-                        <span class="nb-tree__chev" aria-hidden="true">&#9656;</span>
+                        <svg class="nb-tree__chev" viewBox="0 0 6 10" fill="none" aria-hidden="true">
+                            <path d="M1 1.5l4 3.5-4 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
                     </button>
                 </div>
                 @if($depth < 4)
@@ -53,7 +55,7 @@
                 @endif
             @else
                 {{-- Leaf: plain anchor --}}
-                <a class="nb-tree__row{{ $isActive ? ' is-active' : '' }}" href="{{ $href }}">
+                <a class="nb-tree__row{{ $isActive ? ' is-active' : ($isOpen ? ' is-branch' : '') }}" href="{{ $href }}">
                     {{ $node->name }}
                 </a>
             @endif

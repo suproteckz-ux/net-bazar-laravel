@@ -215,4 +215,39 @@ class CategoryTreeViewTest extends TestCase
         $body = $this->get('/catalog')->assertOk()->getContent();
         $this->assertStringContainsString('nb-tree', $body);
     }
+
+    // ─── 7. is-branch class appears on non-topmost nodes in the active path ────
+    // activePath is ordered leaf-first; end() gives the topmost ancestor →
+    // that ancestor gets is-active. Every other node in the path (including the
+    // current page leaf) gets is-branch via the redesign.
+
+    public function test_active_leaf_gets_is_branch_and_parent_gets_is_active(): void
+    {
+        $this->seedPublicKaspiCategory('ctv-br-p', 'РодительБрэнч', null, 'roditel-branch', 'SKU-BR-P');
+        $this->seedPublicKaspiCategory('ctv-br-c', 'ДочьАктивная',  'ctv-br-p', 'doch-aktivnaya', 'SKU-BR-C');
+
+        // Navigate to the CHILD — path is [child, parent]; end() = parent → is-active
+        $body = $this->get('/catalog/doch-aktivnaya')->assertOk()->getContent();
+
+        // Topmost ancestor (parent) must get is-active
+        $this->assertMatchesRegularExpression(
+            '/<div class="nb-tree__row is-active"/',
+            $body,
+            'Topmost ancestor div.nb-tree__row must carry is-active'
+        );
+
+        // Current page leaf (not topmost) must get is-branch from the redesign
+        $this->assertMatchesRegularExpression(
+            '/<a class="nb-tree__row is-branch"/',
+            $body,
+            'Non-topmost active leaf anchor must carry is-branch'
+        );
+
+        // Parent must NOT carry is-branch (it carries is-active instead)
+        $this->assertDoesNotMatchRegularExpression(
+            '/<div class="nb-tree__row is-branch"/',
+            $body,
+            'Topmost ancestor must not carry is-branch'
+        );
+    }
 }
