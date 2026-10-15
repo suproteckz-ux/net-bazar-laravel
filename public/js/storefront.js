@@ -34,15 +34,18 @@
 
   /* ── Category tree: client-side toggle (progressive enhancement) ─── */
   /* Server renders the correct open/closed state; JS allows the user to
-     expand/collapse other branches without a round-trip.               */
-  document.querySelectorAll('.nb-tree__row[aria-expanded]').forEach(function (row) {
-    row.addEventListener('click', function (e) {
-      e.preventDefault();                           /* stop navigation */
+     expand/collapse branches without a round-trip.
+     The toggle button (.nb-tree__toggler) is separate from the link
+     (.nb-tree__link), so clicking the name navigates while the button
+     only expands/collapses. No e.preventDefault() needed.             */
+  document.querySelectorAll('.nb-tree__toggler').forEach(function (btn) {
+    btn.addEventListener('click', function () {
       var isOpen = this.getAttribute('aria-expanded') === 'true';
       this.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
-      var branch = this.nextElementSibling;
-      if (branch && branch.classList.contains('nb-tree__branch')) {
-        branch.hidden = isOpen;
+      var branchId = this.getAttribute('aria-controls');
+      if (branchId) {
+        var branch = document.getElementById(branchId);
+        if (branch) { branch.hidden = isOpen; }
       }
     });
   });

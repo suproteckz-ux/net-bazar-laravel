@@ -6,6 +6,12 @@
                   Legacy kaspi nodes (from buildTree) have no node_key/node_type set.
     $activePath : array of node_keys ('kaspi:{id}' or 'manual:{id}') from selected node to root
     $depth      : 1–4 (controls indent + ink + size via nb-tree--l{n})
+
+    For parent nodes the row is split into:
+      - <a class="nb-tree__link">   → navigates to the category page
+      - <button class="nb-tree__toggler"> → expands/collapses children (no navigation)
+    Leaf nodes are plain <a class="nb-tree__row"> anchors.
+    No nested interactive elements (no button inside a, no a inside button).
 --}}
 <ul class="nb-tree nb-tree--l{{ $depth }}">
     @foreach ($nodes as $node)
@@ -22,24 +28,34 @@
                     ? route('catalog.show',  ['slug' => $node->url_slug])
                     : route('catalog.index', ['category' => $node->id]);
             }
+            $safeKey = preg_replace('/[^a-zA-Z0-9_-]/', '-', $nodeKey);
         @endphp
         <li>
-            <a class="nb-tree__row{{ $isActive ? ' is-active' : '' }}"
-               href="{{ $href }}"
-               @if($hasChildren) aria-expanded="{{ $isOpen ? 'true' : 'false' }}" @endif>
-                @if($hasChildren)
-                    <span class="nb-tree__chev" aria-hidden="true">&#9656;</span>
-                @endif
-                <span>{{ $node->name }}</span>
-            </a>
-            @if($hasChildren && $depth < 4)
-                <div class="nb-tree__branch" @unless($isOpen) hidden @endunless>
-                    <x-category-tree
-                        :nodes="$node->children"
-                        :active-path="$activePath"
-                        :depth="$depth + 1"
-                    />
+            @if($hasChildren)
+                {{-- Parent: link navigates, button toggles children --}}
+                <div class="nb-tree__row{{ $isActive ? ' is-active' : '' }}">
+                    <a class="nb-tree__link" href="{{ $href }}">{{ $node->name }}</a>
+                    <button class="nb-tree__toggler"
+                            aria-expanded="{{ $isOpen ? 'true' : 'false' }}"
+                            aria-controls="nbt-{{ $safeKey }}"
+                            aria-label="{{ $node->name }}">
+                        <span class="nb-tree__chev" aria-hidden="true">&#9656;</span>
+                    </button>
                 </div>
+                @if($depth < 4)
+                    <div class="nb-tree__branch" id="nbt-{{ $safeKey }}" @unless($isOpen) hidden @endunless>
+                        <x-category-tree
+                            :nodes="$node->children"
+                            :active-path="$activePath"
+                            :depth="$depth + 1"
+                        />
+                    </div>
+                @endif
+            @else
+                {{-- Leaf: plain anchor --}}
+                <a class="nb-tree__row{{ $isActive ? ' is-active' : '' }}" href="{{ $href }}">
+                    {{ $node->name }}
+                </a>
             @endif
         </li>
     @endforeach

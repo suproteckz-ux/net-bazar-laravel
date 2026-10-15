@@ -281,21 +281,56 @@ h1, h2, h3 { font-family: var(--nb-font-display); font-weight: 800; margin: 0; s
 
 /* category tree — 4 levels, DB-driven */
 .nb-tree, .nb-tree ul { list-style: none; margin: 0; padding: 0; }
+
+/* Row: hover/active visual container — div for parent nodes, a for leaf nodes */
 .nb-tree__row {
-  display: flex; align-items: center; gap: 9px;
+  display: flex; align-items: center;
   border-radius: var(--nb-r-sm); border-left: 2px solid transparent;
-  cursor: pointer; color: #fff; text-decoration: none;
+  color: #fff;
 }
 .nb-tree__row:hover { background: var(--nb-hover-row); }
 .nb-tree__row.is-active { color: var(--nb-accent); font-weight: 700; background: var(--nb-hover-row); border-left-color: var(--nb-accent); }
-.nb-tree__chev { width: 10px; flex: none; font-size: 10px; color: var(--nb-dim); transition: transform .15s ease; }
-.nb-tree__row[aria-expanded="true"] .nb-tree__chev { transform: rotate(90deg); }
+
+/* Leaf nodes: the row IS the anchor */
+a.nb-tree__row { text-decoration: none; cursor: pointer; }
+a.nb-tree__row:focus-visible { outline: 2px solid var(--nb-accent); outline-offset: -2px; }
+
+/* Link inside a parent row — navigates, takes all available width */
+.nb-tree__link {
+  flex: 1; min-width: 0; text-decoration: none; color: inherit; cursor: pointer;
+}
+.nb-tree__link:focus-visible { outline: 2px solid var(--nb-accent); outline-offset: -2px; border-radius: var(--nb-r-sm); }
+
+/* Toggle button — expands/collapses children, does not navigate */
+.nb-tree__toggler {
+  flex: none; align-self: stretch; background: none; border: none; cursor: pointer;
+  min-width: 40px; display: flex; align-items: center; justify-content: center;
+  padding: 0 8px; color: var(--nb-dim); transition: color .15s ease;
+}
+.nb-tree__toggler:hover { color: var(--nb-accent); }
+.nb-tree__toggler:focus-visible { outline: 2px solid var(--nb-accent); outline-offset: -2px; border-radius: var(--nb-r-sm); }
+
+.nb-tree__chev { width: 10px; flex: none; font-size: 10px; transition: transform .15s ease; }
+.nb-tree__toggler[aria-expanded="true"] .nb-tree__chev { transform: rotate(90deg); }
+
 .nb-tree__count { font-size: 12px; font-weight: 600; color: var(--nb-dim); }
-/* depth: padding-left grows +16px, size and ink step down */
-.nb-tree--l1 > li > .nb-tree__row { padding: 9px 12px;            font-size: 15px;   font-weight: 600; color: #fff; }
-.nb-tree--l2 > li > .nb-tree__row { padding: 8px 12px 8px 26px;   font-size: 14px;   font-weight: 500; color: var(--nb-text-3); }
-.nb-tree--l3 > li > .nb-tree__row { padding: 7px 12px 7px 42px;   font-size: 13.5px; font-weight: 500; color: #A2A6AD; }
-.nb-tree--l4 > li > .nb-tree__row { padding: 6px 12px 6px 58px;   font-size: 13px;   font-weight: 500; color: #8A8F97; }
+
+/* depth — padding-left grows, size and ink step down */
+/* leaf (a.nb-tree__row): full padding on the anchor itself */
+.nb-tree--l1 > li > a.nb-tree__row { padding: 9px 12px;            font-size: 15px;   font-weight: 600; color: #fff; }
+.nb-tree--l2 > li > a.nb-tree__row { padding: 8px 12px 8px 26px;   font-size: 14px;   font-weight: 500; color: var(--nb-text-3); }
+.nb-tree--l3 > li > a.nb-tree__row { padding: 7px 12px 7px 42px;   font-size: 13.5px; font-weight: 500; color: #A2A6AD; }
+.nb-tree--l4 > li > a.nb-tree__row { padding: 6px 12px 6px 58px;   font-size: 13px;   font-weight: 500; color: #8A8F97; }
+/* parent (div.nb-tree__row): font/ink on container, indent+vertical on link */
+.nb-tree--l1 > li > div.nb-tree__row { font-size: 15px;   font-weight: 600; color: #fff; }
+.nb-tree--l1 > li > div.nb-tree__row > .nb-tree__link { padding: 9px 4px 9px 12px; }
+.nb-tree--l2 > li > div.nb-tree__row { font-size: 14px;   font-weight: 500; color: var(--nb-text-3); }
+.nb-tree--l2 > li > div.nb-tree__row > .nb-tree__link { padding: 8px 4px 8px 26px; }
+.nb-tree--l3 > li > div.nb-tree__row { font-size: 13.5px; font-weight: 500; color: #A2A6AD; }
+.nb-tree--l3 > li > div.nb-tree__row > .nb-tree__link { padding: 7px 4px 7px 42px; }
+.nb-tree--l4 > li > div.nb-tree__row { font-size: 13px;   font-weight: 500; color: #8A8F97; }
+.nb-tree--l4 > li > div.nb-tree__row > .nb-tree__link { padding: 6px 4px 6px 58px; }
+
 .nb-tree__branch[hidden] { display: none; }
 .nb-tree__all { display: flex; align-items: center; justify-content: space-between;
   padding: 10px 12px; border-radius: var(--nb-r-sm); font-size: 15px; font-weight: 700; color: #fff; }
