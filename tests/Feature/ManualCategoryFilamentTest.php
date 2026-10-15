@@ -425,6 +425,95 @@ class ManualCategoryFilamentTest extends TestCase
         $component->assertHasNoErrors();
     }
 
+    // ─── 17. Save with kaspi_parent_id — regression for PHP TypeError (HTTP 419) ──
+    // Root cause: `use Filament\Forms\Get` (Filament v3) in ManualCategoryResource.
+    // Filament v4 passes Filament\Schemas\Components\Utilities\Get to the rules()
+    // factory closure; the wrong type hint caused a PHP TypeError caught by Livewire
+    // as HTTP 419. Fixed by correcting the import to the Filament v4 namespace.
+
+    public function test_save_with_kaspi_parent_id_succeeds_after_type_error_fix(): void
+    {
+        $this->actingAs($this->adminUser());
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        DB::table('kaspi_categories')->insertOrIgnore([
+            'id'        => 'kcat-save-reg',
+            'parent_id' => null,
+            'name'      => 'Кресла сохранение',
+            'path'      => 'Мебель / Кресла сохранение',
+            'source_id' => 'kcat-save-reg',
+        ]);
+
+        $category = ManualCategory::create([
+            'name'            => 'Кресла сохранение тест',
+            'slug'            => 'kresla-save-reg',
+            'is_active'       => true,
+            'sort_order'      => 0,
+            'kaspi_parent_id' => 'kcat-save-reg',
+        ]);
+
+        Livewire::test(EditManualCategory::class, ['record' => $category->getKey()])
+            ->fillForm([
+                'name'            => 'Кресла сохранение обновлено',
+                'slug'            => 'kresla-save-reg',
+                'kaspi_parent_id' => 'kcat-save-reg',
+            ])
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('manual_categories', [
+            'id'   => $category->id,
+            'name' => 'Кресла сохранение обновлено',
+        ]);
+    }
+
+    // ─── 18. Mutual exclusion: both kaspi_parent_id and parent_id → validation error ──
+    // The record is seeded with both fields set directly in the DB to bypass
+    // afterStateUpdated (which would clear one field during fillForm). The edit page
+    // hydrates both values, and save() must reject the form via $fail().
+
+    public function test_validation_rejects_both_kaspi_parent_and_manual_parent(): void
+    {
+        $this->actingAs($this->adminUser());
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        DB::table('kaspi_categories')->insertOrIgnore([
+            'id'        => 'kcat-mutual-reg',
+            'parent_id' => null,
+            'name'      => 'Кресла взаимность',
+            'path'      => 'Мебель / Кресла взаимность',
+            'source_id' => 'kcat-mutual-reg',
+        ]);
+
+        $parentId = DB::table('manual_categories')->insertGetId([
+            'name'       => 'Родитель взаимность',
+            'slug'       => 'roditel-vzaimnost-reg',
+            'is_active'  => true,
+            'sort_order' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Seeded directly with both fields set — simulates a corrupt DB state.
+        // afterStateUpdated callbacks don't fire during form hydration, so both
+        // values will be present in the form state when save() validates.
+        $categoryId = DB::table('manual_categories')->insertGetId([
+            'name'            => 'Категория взаимность',
+            'slug'            => 'kategoriya-vzaimnost-reg',
+            'is_active'       => true,
+            'sort_order'      => 0,
+            'kaspi_parent_id' => 'kcat-mutual-reg',
+            'parent_id'       => $parentId,
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
+
+        // kaspi_parent_id rules(): $get('parent_id') is truthy → $fail() fires.
+        Livewire::test(EditManualCategory::class, ['record' => $categoryId])
+            ->call('save')
+            ->assertHasErrors();
+    }
+
     // ─── 10. getSearchResultsUsing filters by path substring ──────────────────
 
     public function test_kaspi_category_search_filters_by_path(): void
