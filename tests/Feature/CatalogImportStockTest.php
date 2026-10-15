@@ -456,4 +456,100 @@ XML;
         $this->assertEquals(0, $s->source_available);
         $this->assertEquals(0, $this->product($sku)->available);
     }
+
+    // ─── 13. New SKU inserted by import gets url_slug auto-generated ─────────
+    // CatalogImport calls generate-url-slugs after applyFeed when $inserted > 0.
+    // A brand-new SKU must have a non-null, Latin-only slug immediately after import.
+
+    public function test_new_product_gets_url_slug_after_catalog_import(): void
+    {
+        $sku = 'AUTO-SLUG-NEW-SKU';
+
+        $code = $this->runImport($this->buildXml([
+            $sku => ['name' => 'Кресло компьютерное офисное', 'stockCount' => 3],
+        ]));
+
+        $this->assertSame(0, $code);
+
+        $p = $this->product($sku);
+        $this->assertNotNull($p,          'Product must be inserted');
+        $this->assertNotNull($p->url_slug, 'url_slug must be auto-generated after import');
+        $this->assertMatchesRegularExpression(
+            '/^[a-z0-9][a-z0-9-]{3,}$/',
+            $p->url_slug,
+            'Slug must be lowercase alphanumeric + hyphens, length ≥ 4'
+        );
+    }
+
+    // ─── 14. Reimport (stock update) never overwrites an existing url_slug ────
+    // The second run has $inserted = 0 for the already-known SKU, so
+    // generate-url-slugs is not triggered; the slug stays exactly as set by
+    // the first run.
+
+    public function test_reimport_preserves_url_slug(): void
+    {
+        $sku = 'AUTO-SLUG-RERUN';
+
+        // Feed 1: new product inserted → slug generated.
+        $this->runImport($this->buildXml([
+            $sku         => ['name' => 'Мышь компьютерная проводная', 'stockCount' => 5],
+            self::FILLER => ['stockCount' => 1],
+        ]));
+
+        $slugAfterFirst = $this->product($sku)->url_slug;
+        $this->assertNotNull($slugAfterFirst, 'Slug must be generated on first import');
+
+        // Feed 2: same SKU, updated stock — this is an UPDATE, not INSERT.
+        $this->runImport($this->buildXml([
+            $sku         => ['name' => 'Мышь компьютерная проводная', 'stockCount' => 10],
+            self::FILLER => ['stockCount' => 1],
+        ]));
+
+        $this->assertEquals(
+            $slugAfterFirst,
+            $this->product($sku)->url_slug,
+            'url_slug must be identical after stock-only reimport'
+        );
+    }
+
+    // ─── 15. Rejected (too-short) import does not trigger slug generation ─────
+    // When the feed is rejected before applyFeed(), the early return means
+    // generate-url-slugs is never called, leaving url_slug = NULL on any product
+    // that was inserted in a prior successful run.
+
+    public function test_rejected_import_does_not_trigger_slug_generation(): void
+    {
+        $sku = 'AUTO-SLUG-REJECT';
+
+        // Feed 1: product inserted, slug generated; feed count → max = 1.
+        $this->runImport($this->buildXml([
+            $sku => ['name' => 'Клавиатура игровая механическая', 'stockCount' => 2],
+        ]));
+        $slugBefore = $this->product($sku)->url_slug;
+        $this->assertNotNull($slugBefore);
+
+        // Null the slug to simulate a state where slug gen would create something new.
+        DB::table('products')->where('sku', $sku)->update(['url_slug' => null]);
+
+        // Inject a large historical run so the next feed is "too short" and rejected.
+        DB::table('catalog_sync_runs')->insert([
+            'time'        => now()->toDateTimeString(),
+            'sha256'      => str_repeat('f', 64),
+            'offer_count' => 100,
+            'report_json' => '{"result":"success"}',
+        ]);
+
+        // This 1-offer feed fails the 90% check (1 < 90) — must be rejected.
+        $code = $this->runImport($this->buildXml([
+            $sku => ['stockCount' => 99],
+        ]));
+
+        $this->assertSame(1, $code, 'Short feed must be rejected with exit code 1');
+
+        // url_slug must remain NULL — slug gen was NOT called.
+        $this->assertNull(
+            $this->product($sku)->url_slug,
+            'Rejected import must not trigger url_slug generation'
+        );
+    }
 }

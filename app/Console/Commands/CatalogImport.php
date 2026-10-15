@@ -95,6 +95,16 @@ class CatalogImport extends Command
                 . ", {$stats['restored_count']} restored"
                 . ", {$stats['absent_count']} absent)"
             );
+
+            // Step 5: Generate URL slugs for any newly inserted products.
+            // Runs only when the feed introduced new SKUs; skipped on stock-only updates.
+            // The command is idempotent and only touches products with url_slug IS NULL,
+            // so existing slugs are never overwritten.
+            if ($inserted > 0) {
+                $this->line("  Generating URL slugs for {$inserted} new product(s)…");
+                $this->call('netbazar:generate-url-slugs');
+            }
+
             return 0;
         } catch (\Throwable $e) {
             $msg = 'Import failed: ' . $e->getMessage();
